@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Hind Siliguri', sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background: #0f172a; color: #f8fafc; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+
+.app-container { 
+    width: 100%; max-width: 450px; height: 100vh; 
+    background: #0f172a; position: relative; padding: 20px; 
+}
+
+.hidden { display: none !important; }
+
+/* ভিউ স্টাইল (লিডারবোর্ড ফিক্স) */
+.view { 
+    height: 100%; 
+    overflow-y: auto; 
+    padding-bottom: 100px; /* যাতে নেভিগেশন বারে ঢাকা না পড়ে */
+}
+
+/* ৩ডি গ্লো টেক্সট */
+.glow-text { 
+    text-shadow: 0 0 15px #38bdf8; text-align: center; 
+    font-size: 26px; color: #38bdf8; margin: 15px 0; font-weight: bold; 
+}
+
+.trust-badge { 
+    background: rgba(45, 212, 191, 0.1); color: #2dd4bf; 
+    padding: 10px; border-radius: 50px; text-align: center; 
+    font-size: 11px; font-weight: bold; border: 1px solid #2dd4bf; margin-bottom: 20px; 
+}
+
+/* কার্ড ডিজাইন */
+.invest-card { background: linear-gradient(135deg, #2dd4bf, #0d9488); color: #000; padding: 15px; border-radius: 20px; text-align: center; margin-bottom: 15px; font-weight: bold; }
+.card-3d { background: linear-gradient(135deg, #38bdf8, #1d4ed8); padding: 30px; border-radius: 25px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); margin-bottom: 25px; }
+
+/* লেভেল */
+.level-container { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 25px; }
+.lvl-3d { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); flex: 1; padding: 20px 5px; border-radius: 20px; text-align: center; }
+
+/* লিডারবোর্ড ৩ডি কার্ড */
+.lb-3d-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 10px 0; padding: 15px;
+    border-radius: 15px; display: flex; align-items: center;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+}
+.lb-rank { width: 35px; height: 35px; background: #38bdf8; color: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 15px; }
+.lb-info b { font-size: 14px; color: #fff; letter-spacing: 1px; }
+.lb-bal { margin-left: auto; font-weight: bold; color: #2dd4bf; font-size: 16px; }
+
+/* নেভিগেশন (Fixed at Bottom) */
+#bottomNav { 
+    position: fixed; bottom: 0; left: 50%; 
+    transform: translateX(-50%); width: 100%; max-width: 450px; 
+    height: 80px; background: #0f172a; display: flex; 
+    border-top: 1px solid #334155; z-index: 999; 
+}
+#bottomNav div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; cursor: pointer; }
+#bottomNav span { font-size: 11px; margin-top: 4px; }
+.lb-nav-btn { color: #38bdf8 !important; transform: translateY(-3px); transition: 0.3s; }
+
+/* ইনপুট ও বাটন */
+input, select { width: 100%; padding: 15px; margin: 10px 0; border-radius: 15px; border: 1px solid #334155; background: #f8fafc; color: #000; outline: none; }
+.btn-glow { width: 100%; padding: 16px; background: linear-gradient(135deg, #38bdf8, #2563eb); border: none; color: white; font-weight: bold; border-radius: 15px; cursor: pointer; }
+
+/* পপআপ */
+.popup { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 10000; }
+.popup-content { background: #1e293b; width: 85%; padding: 30px; border-radius: 25px; border: 1px solid #38bdf8; }
+.loader { border: 4px solid #334155; border-top: 4px solid #38bdf8; border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; margin: 15px auto; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
