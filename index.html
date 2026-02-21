@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EarnPro Max 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <div id="noticePopup" class="popup hidden">
+        <div class="popup-content animate__animated animate__zoomIn">
+            <i class="fas fa-bullhorn" style="font-size: 40px; color: #38bdf8; margin-bottom: 15px;"></i>
+            <h3>জরুরি নোটিশ</h3>
+            <p id="popupText">লোড হচ্ছে...</p>
+            <button class="btn-glow" onclick="closePopup()">বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <div id="authView" class="view">
+            <h2 class="glow-text">EarnPro 3D</h2>
+            <div id="regFields" class="hidden">
+                <input type="text" id="rName" placeholder="আপনার নাম">
+                <input type="text" id="rRefer" placeholder="রেফার কোড">
+            </div>
+            <input type="number" id="uPhone" placeholder="ফোন নম্বর">
+            <input type="password" id="uPass" placeholder="পাসওয়ার্ড (৬ সংখ্যা)">
+            <button class="btn-glow" id="authBtn">প্রবেশ করুন</button>
+            <p id="toggleText" style="text-align:center; cursor:pointer; margin-top:15px;">নতুন একাউন্ট খুলুন</p>
+        </div>
+
+        <div id="homeView" class="view hidden">
+            <div class="header">
+                <span id="uNameDisp">ইউজার</span>
+                <i class="fas fa-sign-out-alt" onclick="logout()" style="color:#ff4d4d;"></i>
+            </div>
+            <div class="trust-badge">
+                <i class="fas fa-check-circle"></i> 10M+ TRUSTED USERS GLOBALLY
+            </div>
+            <div class="invest-card">
+                <small>সক্রিয় ইনভেস্টমেন্ট</small>
+                <h2 id="uInvested">৳ ০.০০</h2>
+            </div>
+            <div class="card-3d animate__animated animate__pulse animate__infinite">
+                <small>উইথড্রযোগ্য মোট ব্যালেন্স</small>
+                <h1 id="totalBal">৳ ০.০০</h1>
+            </div>
+            <div class="level-container">
+                <div class="lvl-3d"><h3>L1</h3><p id="l1I">৳ ০</p></div>
+                <div class="lvl-3d"><h3>L2</h3><p id="l2I">৳ ০</p></div>
+                <div class="lvl-3d"><h3>L3</h3><p id="l3I">৳ ০</p></div>
+            </div>
+            <div class="refer-box">আপনার কোড: <b id="uMyCode">---</b></div>
+        </div>
+
+        <div id="leaderView" class="view hidden">
+            <h2 class="glow-text"><i class="fas fa-trophy"></i> TOP 10 EARNERS</h2>
+            <div id="lbTimer" style="text-align:center; color:#ffb703; font-size:12px; margin-bottom:15px;">Refreshing in: 60s</div>
+            <div id="leaderboardList"></div>
+        </div>
+
+        <div id="withdrawView" class="view hidden">
+            <h2 class="glow-text">উইথড্র ফান্ড</h2>
+            <select id="wMethod"><option value="Bkash">Bkash</option><option value="Nagad">Nagad</option></select>
+            <input type="number" id="wAmount" placeholder="পরিমাণ (৳)">
+            <input type="text" id="wNumber" placeholder="নম্বর দিন">
+            <button class="btn-glow" id="subWithdrawBtn">উইথড্র রিকোয়েস্ট</button>
+        </div>
+
+        <div id="depoView" class="view hidden">
+            <h2 class="glow-text">একাউন্ট এক্টিভ</h2>
+            <div class="notice-box">
+                <p>ফি: <b id="joinFeeDisp">...</b> টাকা।</p>
+                <p>নম্বর: <b id="adminNum">লোড হচ্ছে...</b></p>
+                <p style="color: #ffb703; font-weight: bold; margin-top: 10px;">⚠️ রাত ১০ টার ভিতরে সব চেক করে Approved করা হবে।</p>
+            </div>
+            <div id="trxArea">
+                <input type="text" id="trxId" placeholder="TrxID দিন">
+                <button class="btn-glow" id="subTrxBtn">সাবমিট TrxID</button>
+            </div>
+            <div id="pendingBox" class="hidden">
+                <div class="loader"></div>
+                <p>ভেরিফিকেশন চলছে... রাত ১০ টার মধ্যে এক্টিভ হবে।</p>
+            </div>
+        </div>
+
+        <nav id="bottomNav" class="hidden">
+            <div onclick="showPage('homeView')"><i class="fas fa-home"></i><span>হোম</span></div>
+            <div onclick="showPage('leaderView')" class="lb-nav-btn"><i class="fas fa-chart-line"></i><span>লিডারবোর্ড</span></div>
+            <div onclick="showPage('withdrawView')"><i class="fas fa-wallet"></i><span>উইথড্র</span></div>
+        </nav>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getDatabase, ref, set, get, update, onValue, push } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqG0TFBK-0ZM5IjTwU4VC39esnCDsShI0",
+            authDomain: "trounament-d8110.firebaseapp.com",
+            databaseURL: "https://trounament-d8110-default-rtdb.firebaseio.com",
+            projectId: "trounament-d8110",
+            storageBucket: "trounament-d8110.firebasestorage.app",
+            messagingSenderId: "882962094817",
+            appId: "1:882962094817:web:111ac2630cc2a4199db5a0"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.showPage = (id) => {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        };
+        window.logout = () => { localStorage.clear(); location.reload(); };
+        window.closePopup = () => { document.getElementById('noticePopup').classList.add('hidden'); };
+
+        // ২০০ জন ইউজারের নামের লিস্ট
+        const namesPool = ["ABIR KHAN", "SABBIR AHMED", "MIM AKTER", "RIYAD CHOWDHURY", "SUMON MIA", "NILA ISLAM", "RAKIB HASAN", "TUHIN SARKAR", "SUMI KHANAM", "HASAN MAHMUD", "ARIF ISLAM", "FATIMA KHATUN", "SAJIB MIA", "KAWSAR AHMED", "TANVIR HOSSAIN", "RUMANA PERVIN", "JASHIM UDDIN", "NAZMUL HOQUE", "SHAMIMA NASRIN", "FOYSAL AHMED", "ANWAR HOSSAIN", "MEHEDI HASAN", "SAKIB AL HASSAN", "TAMIM IQBAL", "MUSHFIQUR RAHIM", "MAHMUDULLAH RIYAD", "MUSTAFIZUR RAHMAN", "LITON DAS", "TASKIN AHMED", "SHORIFUL ISLAM", "AFIF HOSSAIN", "NURUL HASAN", "NASUM AHMED", "MAHEDI HASAN", "SABBIR RAHMAN", "SOUMYA SARKAR", "IMRUL KAYES", "MOMINUL HAQUE", "TAIJUL ISLAM", "EBADOT HOSSAIN", "KHALED AHMED", "NAYEEM HASAN", "ABU JAYED", "RUBEL HOSSAIN", "SHAFIUL ISLAM", "AL-AMIN HOSSAIN", "ZIAUR RAHMAN", "FARHAD REZA", "ENAMUL HAQUE", "ANAMUL HAQUE", "ROKONUZZAMAN", "SHAHADAT HOSSAIN", "RAJUL ISLAM", "MOHAMMAD MITHUN", "MOSADDEK HOSSAIN", "NAZMUL ISLAM", "SUNZAMUL ISLAM", "SUWASHISH ROY", "KAMRUL ISLAM", "AL-AMIN", "FORHAD HOSSAIN", "RAKIBUL HASAN", "SHUVAGATA HOM", "NAEEM ISLAM", "SAFKAT AHMED", "TANVIR ISLAM", "PARVEZ HOSSAIN", "MAHMUDUL HASAN", "TOWHID HRIDOY", "SHAMIM HOSSAIN", "AKBAR ALI", "RAKIBUL ISLAM", "SHORIF UDDIN", "TANZID HASAN", "MRITUNJOY CHOWDHURY", "SHAHADAT HOSSAIN", "AVISHEK DAS", "PRANTIK NAWROSE", "HASAN MURAD", "ASHIQUR ZAMAN", "MAHFUZUR RAHMAN", "SAADMAN ISLAM", "SAIF HASSAN", "YASIR ALI", "ZAKIR HASAN", "NURUL ABEDIN", "AKRAM KHAN", "MINHAJUL ABEDIN", "HABIBUL BASHAR", "KHALED MASHUD", "MOHAMMAD RAFIQUE", "KHALED MAHMUD", "AMINUL ISLAM", "JAVED OMAR", "SHAHRIAR NAFEES", "AFTAB AHMED", "RAJIN SALEH", "ABDUR RAZZAK", "SYED RASEL", "ENAMUL HAQUE JR", "TAPASH BAISYA", "MASHRAFE BIN MORTAZA", "SHAHADAT HOSSAIN", "MOHAMMAD ASHRAFUL", "NAFIS IQBAL", "MANJURAL ISLAM", "MAZHARUL HAQUE", "HASIBUL HOSSAIN", "MOHAMMAD SHARIF", "TARIQ AZIZ", "ALOK KAPALI", "TAPASH BAISYA", "FAHIM MUNTASIR", "TALHA JUBAYER", "EHSANUL HAQUE", "SANWAR HOSSAIN", "MAHBUB CHOWDHURY", "MUSHFIQUR RAHMAN", "NABIUL ISLAM", "RAFIQUL ISLAM", "SAJJAD KADIR", "ZAHID HOSSAIN", "MITHUN ALI", "SOHAG GAZI", "ZIAUR RAHMAN", "MUKTAR ALI", "ALAUDDIN BABU", "Dhiman Ghosh", "Suhrawadi Shuvo", "Nazmus Sadat", "Mehrab Hossain", "Jahirul Islam", "Tushar Imran", "Nadif Chowdhury", "Saghir Hossain", "Mahbubul Alam", "Dolar Mahmud", "Tareq Aziz", "Rezaul Karim", "Hammad Azam", "Noor Hossain", "Mofizur Rahman", "Sultan Ahmed", "Nayeem Ahmed", "Jahangir Alam", "Shamsur Rahman", "Rony Talukdar", "Liton Kumar", "Mosaddek Hossain", "Nurul Hasan", "Abu Hider", "Kamrul Islam", "Subashis Roy", "Ebadot Hossain", "Afif Hossain", "Mahedi Hasan", "Mohammad Saifuddin", "Sunzamul Islam", "Tanvir Islam", "Yeasin Arafat", "Shoriful Islam", "Hasan Mahmud", "Nayeem Hasan", "Khaled Ahmed", "Tanzim Hasan Sakib", "Shamim Hossain", "Towhid Hridoy", "Shoriful Islam", "Rakibul Hasan", "Parvez Hossain", "Mahmudul Hasan", "Akbar Ali", "Shahadat Hossain", "Avishek Das", "Prantik Nawrose", "Hasan Murad", "Ashiqur Zaman", "Mahfuzur Rahman", "Saadman Islam", "Saif Hassan", "Yasir Ali", "Zakir Hasan", "Ebadot Hossain", "Shoriful Islam", "Hasan Mahmud", "Nasum Ahmed", "Mahedi Hasan", "Afif Hossain", "Nurul Hasan", "Shamim Hossain", "Towhid Hridoy", "Shoriful Islam", "Hasan Mahmud", "Nasum Ahmed", "Mahedi Hasan", "Afif Hossain", "Nurul Hasan", "Shamim Hossain", "Towhid Hridoy", "Shoriful Islam", "Hasan Mahmud", "Nasum Ahmed"];
+
+        function genLeaderboard() {
+            const list = document.getElementById('leaderboardList');
+            list.innerHTML = "";
+            // ২০০ জন থেকে রেন্ডম ১০ জন বেছে নেওয়া
+            let shuffled = namesPool.sort(() => 0.5 - Math.random());
+            let top10 = shuffled.slice(0, 10);
+            
+            top10.forEach((name, i) => {
+                let refer = Math.floor(Math.random() * 95) + 15;
+                let bal = (Math.floor(Math.random() * 18000) + 3000).toLocaleString();
+                list.innerHTML += `
+                    <div class="lb-3d-card animate__animated animate__fadeInUp" style="animation-delay: ${i * 0.1}s">
+                        <div class="lb-rank">${i+1}</div>
+                        <div class="lb-info">
+                            <b>${name}</b>
+                            <small>মোট রেফার: ${refer}</small>
+                        </div>
+                        <div class="lb-bal">৳ ${bal}</div>
+                    </div>`;
+            });
+        }
+
+        let lbSec = 60;
+        setInterval(() => {
+            lbSec--;
+            document.getElementById('lbTimer').innerText = `Refreshing in: ${lbSec}s`;
+            if(lbSec <= 0) { genLeaderboard(); lbSec = 60; }
+        }, 1000);
+        genLeaderboard();
+
+        // বাকি Firebase লজিক (লগইন, রেজিস্ট্রেশন, উইথড্র) আগের মতই থাকবে...
+        onValue(ref(db, 'settings'), (snap) => {
+            if(snap.exists()){
+                const s = snap.val();
+                document.getElementById('adminNum').innerText = s.number;
+                document.getElementById('joinFeeDisp').innerText = s.joinFee;
+                document.getElementById('popupText').innerText = s.popupNotice || "স্বাগতম!";
+                document.getElementById('noticePopup').classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('toggleText').onclick = () => {
+            const isReg = document.getElementById('regFields').classList.toggle('hidden');
+            document.getElementById('authBtn').innerText = isReg ? "রেজিস্ট্রেশন" : "প্রবেশ করুন";
+        };
+
+        document.getElementById('authBtn').onclick = async () => {
+            const p = document.getElementById('uPhone').value;
+            const pass = document.getElementById('uPass').value;
+            const isReg = !document.getElementById('regFields').classList.contains('hidden');
+            if(!p || pass.length < 6) return alert("সঠিক নম্বর ও কমপক্ষে ৬ সংখ্যার পাসওয়ার্ড দিন!");
+            const userSnap = await get(ref(db, 'users/' + p));
+            if(isReg) {
+                if(userSnap.exists()) return alert("এই নম্বর দিয়ে আগেই অ্যাকাউন্ট খোলা হয়েছে!");
+                const name = document.getElementById('rName').value;
+                const refer = document.getElementById('rRefer').value;
+                const allU = await get(ref(db, 'users'));
+                let refOwner = (refer === "BD2026YTF") ? "ADMIN" : null;
+                if(!refOwner && allU.exists()){
+                    refOwner = Object.keys(allU.val()).find(k => allU.val()[k].myCode === refer);
+                }
+                if(!refOwner) return alert("ভুল রেফার কোড!");
+                await set(ref(db, 'users/' + p), {
+                    name, phone: p, pass, 
+                    myCode: Math.random().toString(36).substring(2,10).toUpperCase(),
+                    referredBy: refOwner, status: "Pending", trx: "", 
+                    l1I: 0, l2I: 0, l3I: 0, invested: 0
+                });
+                localStorage.setItem('session', p); location.reload();
+            } else {
+                if(userSnap.exists() && userSnap.val().pass === pass){
+                    localStorage.setItem('session', p); location.reload();
+                } else alert("ভুল তথ্য!");
+            }
+        };
+
+        const session = localStorage.getItem('session');
+        if(session){
+            onValue(ref(db, 'users/' + session), (snap) => {
+                const u = snap.val();
+                if(!u) return;
+                document.getElementById('authView').classList.add('hidden');
+                if(u.status === "Active") {
+                    showPage('homeView');
+                    document.getElementById('bottomNav').classList.remove('hidden');
+                    document.getElementById('uNameDisp').innerText = u.name;
+                    document.getElementById('uMyCode').innerText = u.myCode;
+                    document.getElementById('uInvested').innerText = "৳ " + u.invested;
+                    document.getElementById('totalBal').innerText = "৳ " + (u.l1I + u.l2I + u.l3I).toFixed(2);
+                    document.getElementById('l1I').innerText = "৳ " + u.l1I;
+                    document.getElementById('l2I').innerText = "৳ " + u.l2I;
+                    document.getElementById('l3I').innerText = "৳ " + u.l3I;
+                } else {
+                    showPage('depoView');
+                    if(u.trx) {
+                        document.getElementById('trxArea').classList.add('hidden');
+                        document.getElementById('pendingBox').classList.remove('hidden');
+                    }
+                }
+            });
+        }
+
+        document.getElementById('subTrxBtn').onclick = () => {
+            const trx = document.getElementById('trxId').value;
+            if(trx) update(ref(db, 'users/' + session), { trx: trx });
+        };
+
+        document.getElementById('subWithdrawBtn').onclick = async () => {
+            const amt = Number(document.getElementById('wAmount').value);
+            const num = document.getElementById('wNumber').value;
+            const meth = document.getElementById('wMethod').value;
+            const u = (await get(ref(db, 'users/' + session))).val();
+            const bal = u.l1I + u.l2I + u.l3I;
+            if(amt >= 100 && bal >= amt) {
+                await push(ref(db, 'withdraws'), { phone: session, name: u.name, amount: amt, number: num, method: meth, status: "Pending" });
+                let rem = amt;
+                let n1 = u.l1I, n2 = u.l2I, n3 = u.l3I;
+                if(n1>=rem) n1-=rem; else { rem-=n1; n1=0; if(n2>=rem) n2-=rem; else { rem-=n2; n2=0; n3-=rem; } }
+                update(ref(db, 'users/' + session), { l1I: n1, l2I: n2, l3I: n3 });
+                alert("সফল!");
+            } else alert("ব্যালেন্স কম!");
+        };
+    </script>
+</body>
+</html>
