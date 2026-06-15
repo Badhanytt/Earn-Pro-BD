@@ -538,33 +538,80 @@ function claimProfit(purchaseKey) {
     });
 }
 
-// লিডারবোর্ড লুপ
+// ২৫ জনের বিশাল ফেক ডেটা পুল (এখান থেকে প্রতি মিনিটে টপ ১০ জন ফিল্টার হবে)
+let fakeLeaderboardData = [
+    { name: "Md. Rafiqul Islam", phone: "01734******", balance: 5420, tag: 'কিং মেম্বার' },
+    { name: "Al Amin Hossain", phone: "01952******", balance: 4850, tag: 'প্রো Elite' },
+    { name: "Sumaiya Akter", phone: "01811******", balance: 4120, tag: 'এলিট মেম্বার' },
+    { name: "Tariqul Islam", phone: "01721******", balance: 3950, tag: 'গোল্ড মেম্বার' },
+    { name: "Nayeem Ahmed", phone: "01685******", balance: 3820, tag: 'গোল্ড মেম্বার' },
+    { name: "Sabbir Rahman", phone: "01515******", balance: 3540, tag: 'সিলভার মেম্বার' },
+    { name: "Mst. Rokeya Begum", phone: "01303******", balance: 3120, tag: 'ম্যাট্রিক্স প্রো' },
+    { name: "Ariful Islam", phone: "01799******", balance: 2950, tag: 'নিয়মিত মেম্বার' },
+    { name: "Fahim Shahriar", phone: "01844******", balance: 2600, tag: 'নতুন মেম্বার' },
+    { name: "Anika Tahsin", phone: "01911******", balance: 2450, tag: 'নতুন মেম্বার' },
+    { name: "Zayan Ahmed", phone: "01755******", balance: 2310, tag: 'সিলভার মেম্বার' },
+    { name: "Taskin Ahmed", phone: "01622******", balance: 2200, tag: 'নিয়মিত মেম্বার' },
+    { name: "Nusrat Jahan", phone: "01311******", balance: 2150, tag: 'এলিট মেম্বার' },
+    { name: "Hasan Al Banna", phone: "01877******", balance: 2050, tag: 'গোল্ড মেম্বার' },
+    { name: "Tanvir Mahtab", phone: "01988******", balance: 1980, tag: 'সিলভার মেম্বার' },
+    { name: "Sajid Afridi", phone: "01552******", balance: 1870, tag: 'নতুন মেম্বার' },
+    { name: "Mehedi Hasan", phone: "01712******", balance: 1750, tag: 'নিয়মিত মেম্বার' },
+    { name: "Riya Khandaker", phone: "01633******", balance: 1690, tag: 'ম্যাট্রিক্স প্রো' },
+    { name: "Asif Ent.", phone: "01404******", balance: 1600, tag: 'প্রো Elite' },
+    { name: "Imran Khan", phone: "01822******", balance: 1540, tag: 'সিলভার মেম্বার' },
+    { name: "Sadia Afrin", phone: "01966******", balance: 1420, tag: 'নতুন মেম্বার' },
+    { name: "Rakibul Pro", phone: "01741******", balance: 1350, tag: 'কিং মেম্বার' },
+    { name: "Monir Hossain", phone: "01309******", balance: 1200, tag: 'নিয়মিত মেম্বার' },
+    { name: "Tamanna Islam", phone: "01511******", balance: 1150, tag: 'নতুন মেম্বার' },
+    { name: "Sakib ALL Round", phone: "01671******", balance: 1050, tag: 'গোল্ড মেম্বার' }
+];
+
+// লিডারবোর্ড রান ও মিক্সিং ফাংশন
 function loadLeaderboard() {
-    let listContainer = document.getElementById('leaderboardList'); if (!listContainer) return;
-    const allUsersPool = [
-        { name: "Md. Rafiqul Islam", phone: "01734******", baseEarn: 5420, baseRef: 48, tag: 'キング মেম্বার' },
-        { name: "Al Amin Hossain", phone: "01952******", baseEarn: 4850, baseRef: 35, tag: 'প্রো elite' },
-        { name: "Sumaiya Akter", phone: "01811******", baseEarn: 4120, baseRef: 29, tag: 'এলিট মেম্বার' },
-        { name: "Tariqul Islam", phone: "01721******", baseEarn: 3950, baseRef: 26, tag: 'গোল্ড মেম্বার' },
-        { name: "Nayeem Ahmed", phone: "01685******", baseEarn: 3820, baseRef: 24, tag: 'গোল্ড মেম্বার' }
-    ];
-    function renderRandomTopTen() {
-        listContainer.innerHTML = ''; 
-        allUsersPool.sort((a, b) => b.baseEarn - a.baseEarn).forEach((u, index) => {
-            let rank = index + 1; let rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
-            let rankIcon = rank === 1 ? '<i class="fas fa-crown"></i>' : rank;
-            listContainer.innerHTML += `
-                <div class="leaderboard-row ${rankClass} animate__animated animate__fadeInRight" style="padding:10px; background:rgba(255,255,255,0.02); margin-bottom:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <b style="color:#f59e0b;">${rankIcon}</b>
-                        <div><div style="font-size:13px; font-weight:bold; color:#fff;">${u.name}</div><div style="font-size:11px; color:#64748b;">${u.phone} (${u.tag})</div></div>
+    let listContainer = document.getElementById('leaderboardList'); 
+    if (!listContainer) return;
+
+    // ১. প্রতি মিনিটে ২৫ জনের কার ব্যালেন্স কত বাড়বে তা সম্পূর্ণ র্যান্ডম (৳ ১০ থেকে ৳ ৮০)
+    fakeLeaderboardData.forEach(user => {
+        let randomBonus = Math.floor(Math.random() * 70) + 10; 
+        user.balance += randomBonus;
+    });
+
+    // ২. ব্যালেন্স অনুযায়ী ২৫ জনকে বড় থেকে ছোট ক্রমানুসারে সাজানো
+    fakeLeaderboardData.sort((a, b) => b.balance - a.balance);
+
+    // ৩. সাজানো লিস্ট থেকে শুধুমাত্র প্রথম ১০ জনকে স্ক্রিনে দেখানোর জন্য ফিল্টার করা
+    let topTen = fakeLeaderboardData.slice(0, 10);
+
+    listContainer.innerHTML = ''; 
+    
+    topTen.forEach((u, index) => {
+        let rank = index + 1; 
+        let rankClass = rank === 1 ? 'rank-1' : (rank === 2 ? 'rank-2' : (rank === 3 ? 'rank-3' : ''));
+        let rankIcon = rank === 1 ? '<i class="fas fa-crown" style="color:#f59e0b;"></i>' : rank;
+
+        listContainer.innerHTML += `
+            <div class="leaderboard-row ${rankClass} animate__animated animate__fadeInRight" style="padding:10px; background:rgba(255,255,255,0.02); margin-bottom:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <b style="color:#f59e0b; min-width:20px; text-align:center;">${rankIcon}</b>
+                    <div>
+                        <div style="font-size:13px; font-weight:bold; color:#fff;">${u.name}</div>
+                        <div style="font-size:11px; color:#64748b;">${u.phone} (${u.tag})</div>
                     </div>
-                    <div style="text-align:right;"><span style="color:#10b981; font-weight:bold; font-size:13px;">৳ ${u.baseEarn}</span><div style="font-size:10px; color:#94a3b8;">রেফার: ${u.baseRef} জন</div></div>
-                </div>`;
-        });
-    }
-    renderRandomTopTen();
+                </div>
+                <div style="text-align:right;">
+                    <span style="color:#10b981; font-weight:bold; font-size:13px;">৳ ${u.balance}</span>
+                    <div style="font-size:10px; color:#94a3b8;">রেফার: ${Math.floor(u.balance / 130)} জন</div>
+                </div>
+            </div>`;
+    });
 }
+
+// ৪. ৬০,০০০ মিলিসেকেন্ড = ১ মিনিট পর পর অটোমেটিক রিমিক্স লুপ রান হবে
+clearInterval(leaderboardInterval);
+leaderboardInterval = setInterval(loadLeaderboard, 60000);
+
 
 // ==========================================
 // 👑 COMPLETE ADMIN CONTROL ACTIONS (HTML MATCHED)
