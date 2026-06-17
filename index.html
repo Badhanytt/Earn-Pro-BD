@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Pro Mining</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- টেলিগ্রাম ওয়েব অ্যাপ SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+    <!-- ৩D পপআপ নোটিফিকেশন -->
+    <div id="popupNotification" class="popup hidden"></div>
+
+    <!-- ==================== ইউজার প্যানেল UI ==================== -->
+    <div id="userPanel">
+        
+        <!-- 📢 লাইভ নোটিশ বোর্ড (এডমিন থেকে নিয়ন্ত্রিত) -->
+        <div class="card notice-card">
+            <div class="notice-title">📢 NOTICE:</div>
+            <div class="notice-text"><marquee id="lblLiveNotice" behavior="scroll" direction="left">Loading latest updates...</marquee></div>
+        </div>
+
+        <!-- ব্যালেন্স ও প্রোফাইল কার্ড -->
+        <div class="card">
+            <div class="flex">
+                <div>
+                    <h3 id="txtUsername">Loading...</h3>
+                    <p class="balance-text">মেইন ব্যালেন্স: <b>৳<span id="lblMainBalance">0</span></b></p>
+                    <p class="pending-text">পেন্ডিং রেফার বোনাস: ৳<span id="lblPendingBalance">0</span></p>
+                </div>
+                <div id="adminBadge" class="hidden admin-btn-badge" onclick="togglePanel()">ADMIN PANEL</div>
+            </div>
+        </div>
+
+        <!-- ডিপোজিট ও উইথড্র ফর্ম -->
+        <div class="card">
+            <h3>💸 ক্যাশইন / ক্যাশআউট (২% উইথড্র চার্জ)</h3>
+            
+            <!-- আমাদের অফিশিয়াল নাম্বারগুলো দেখার জায়গা -->
+            <div class="admin-numbers-display">
+                <p>🎯 আমাদের বিকাশ নাম্বার: <b id="dspBkashNum" class="num-color">Loading...</b></p>
+                <p>🎯 আমাদের নগদ নাম্বার: <b id="dspNagadNum" class="num-color">Loading...</b></p>
+                <p>🎯 আমাদের রকেট নাম্বার: <b id="dspRocketNum" class="num-color">Loading...</b></p>
+            </div>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 15px 0;">
+
+            <div class="flex" style="gap: 10px; margin-bottom: 10px;">
+                <input type="number" id="usrTxnAmount" placeholder="টাকার পরিমাণ (৳)" class="input-field" style="margin: 0;">
+                <select id="usrTxnMethod" class="input-field" style="margin: 0; width: 120px;">
+                    <option value="Bkash">বিকাশ</option>
+                    <option value="Nagad">নগদ</option>
+                    <option value="Rocket">রকেট</option>
+                </select>
+            </div>
+            <input type="text" id="usrTxnNumber" placeholder="আপনার পার্সোনাল অ্যাকাউন্ট নাম্বার" class="input-field">
+            <div class="flex" style="gap: 10px;">
+                <button class="btn btn-success" onclick="window.submitDeposit()">ডিপোজিট করুন</button>
+                <button class="btn btn-danger" onclick="window.submitWithdraw()">উইথড্র করুন</button>
+            </div>
+        </div>
+
+        <!-- একটিভ মাইনিং বট কাউন্টডাউন -->
+        <div class="card">
+            <h3>🤖 আপনার একটিভ মাইনিং বট</h3>
+            <div id="noBotActive">আপনার কোনো বট একটিভ নেই। নিচে থেকে একটি বট কিনুন।</div>
+            <div id="botActiveArea" class="hidden">
+                <p>বটের নাম: <b id="actBotName">-</b></p>
+                <p>কাউন্টডাউন সময়: <b id="actBotTimer" class="timer-color">00:00:00</b></p>
+                <p id="actBotStatusMsg" class="sub-text"></p>
+                <button id="btnClaimProfit" class="btn btn-success hidden" onclick="window.claimBotProfit()">Claim Profit</button>
+            </div>
+        </div>
+
+        <!-- ট্রানজেকশন হিস্ট্রি (ইউজার ভিউ) -->
+        <div class="card">
+            <h3>📜 আপনার ট্রানজেকশন হিস্ট্রি</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Number</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userHistoryTableBody">
+                        <tr><td colspan="4" style="text-align: center; color: #888;">কোনো হিস্ট্রি নেই</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- বট শপ -->
+        <div class="card">
+            <h3>🛒 মাইনিং বট শপ</h3>
+            <div id="botShopArea">বট লোড হচ্ছে...</div>
+        </div>
+
+        <!-- ফেক পেমেন্ট প্রুф ও লাইভ লিডারবোর্ড -->
+        <div class="card">
+            <h3>🏆 লাইভ লিডারবোর্ড (টপ ১০ ইউজার)</h3>
+            <p class="sub-text">*প্রতি মিনিটে র্যান্ডম ইউজার পরিবর্তন হয়</p>
+            <table>
+                <thead><tr><th>Rank</th><th>Username</th><th>টোটাল প্রফিট</th></tr></thead>
+                <tbody id="leaderboardBody"></tbody>
+            </table>
+        </div>
+
+        <!-- রেফারেল লিংক -->
+        <div class="card">
+            <h3>🔗 আপনার রেফারেল লিংক</h3>
+            <input type="text" id="refLinkInput" readonly class="input-field">
+            <button class="btn btn-secondary" onclick="copyRefLink()">লিংক কপি করুন</button>
+        </div>
+    </div>
+
+    <!-- ==================== এডমিন প্যানেল UI ==================== -->
+    <div id="adminPanel" class="hidden">
+        <div class="card admin-header-card">
+            <div class="flex">
+                <h2>🎛️ এডমিন কন্ট্রোল প্যানেল</h2>
+                <button class="btn btn-back" onclick="togglePanel()">User View</button>
+            </div>
+        </div>
+
+        <!-- 📊 এডমিন পরিসংখ্যান ড্যাশবোর্ড -->
+        <div class="admin-dashboard-grid">
+            <div class="stat-box">
+                <h4>টোটাল ইউজার ব্যালেন্স</h4>
+                <p>৳<span id="statTotalUserBal">0</span></p>
+            </div>
+            <div class="stat-box" style="border-color: var(--success);">
+                <h4>টোটাল ডিপোজিট (সফল)</h4>
+                <p style="color: var(--success);">৳<span id="statTotalDeposit">0</span></p>
+            </div>
+            <div class="stat-box" style="border-color: var(--danger);">
+                <h4>টোটাল উইথড্র (সফল)</h4>
+                <p style="color: var(--danger);">৳<span id="statTotalWithdraw">0</span></p>
+            </div>
+        </div>
+
+        <!-- 📢 নোটিশ ও নাম্বার আপডেট করার মেগা প্যানেল -->
+        <div class="card" style="border-color: var(--primary);">
+            <h3>📢 নোটিশ ও অফিশিয়াল নাম্বার আপডেট</h3>
+            
+            <label class="admin-label">অ্যাপের নোটিশ টেক্সট লিখুন:</label>
+            <input type="text" id="admNoticeText" placeholder="যেমন: নতুন ধামাকা অফার! প্রতি রেফারে ১০০ টাকা পাবেন..." class="input-field">
+            
+            <div class="flex" style="gap: 10px;">
+                <div>
+                    <label class="admin-label">বিকাশ নাম্বার:</label>
+                    <input type="text" id="admBkashNum" placeholder="বিকাশ নাম্বার" class="input-field">
+                </div>
+                <div>
+                    <label class="admin-label">নগদ নাম্বার:</label>
+                    <input type="text" id="admNagadNum" placeholder="নগদ নাম্বার" class="input-field">
+                </div>
+                <div>
+                    <label class="admin-label">রকেট নাম্বার:</label>
+                    <input type="text" id="admRocketNum" placeholder="রকেট নাম্বার" class="input-field">
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="window.saveAdminSettings()">সেটিংস সেভ করুন</button>
+        </div>
+
+        <!-- 🔗 রেফার বোনাস সেট করার এডমিন কন্ট্রোল -->
+        <div class="card" style="border-color: var(--admin-theme);">
+            <h3>🔗 রেফার বোনাসের পরিমাণ সেট করুন</h3>
+            <div class="search-container">
+                <input type="number" id="admRefBonusAmount" placeholder="বোনাসের পরিমাণ (৳)" class="input-field" style="margin:0;">
+                <button class="btn btn-success search-btn" onclick="window.setReferralBonusFromAdmin()">Save</button>
+            </div>
+            <p class="sub-text" style="margin-top: 8px; color: var(--success);">বর্তমানে সেট করা বোনাস: ৳<span id="admCurrentRefBonus">0</span></p>
+        </div>
+
+        <!-- ট্রানজেকশন রিকোয়েস্ট লিস্ট (Accept/Decline) -->
+        <div class="card" style="border-color: orange;">
+            <h3>📥 ডিপোজিট & উইথড্র রিকোয়েস্ট (পেন্ডিং)</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Number</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTxnTableBody">
+                        <tr><td colspan="6" style="text-align: center;">কোনো রিকোয়েস্ট পেন্ডিং নেই</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ইউজার সার্চ ও এডিট/ব্লক -->
+        <div class="card">
+            <h3>🔍 ইউজার ম্যানেজমেন্ট (ID সার্চ)</h3>
+            <div class="search-container">
+                <input type="text" id="admSearchId" placeholder="ইউজার টেলিগ্রাম ID দিন" class="input-field">
+                <button class="btn search-btn" onclick="window.searchUserAdmin()">Search</button>
+            </div>
+            <div id="admUserResult" class="hidden admin-result-box">
+                <p>নাম: <span id="admUsrName"></span></p>
+                <p>ব্যালেন্স: ৳<input type="number" id="admUsrBal" class="small-input"></p>
+                <div class="flex" style="gap: 10px;">
+                    <button class="btn btn-success" onclick="window.updateUserBalAdmin()">Save</button>
+                    <button class="btn btn-danger" id="btnBlockAdmin" onclick="window.toggleBlockUserAdmin()">Block</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- বট তৈরি ও কন্ট্রোল -->
+        <div class="card">
+            <h3>⚙️ নতুন বট এড করুন</h3>
+            <input type="text" id="admBotName" placeholder="বটের নাম" class="input-field">
+            <input type="number" id="admBotPrice" placeholder="বটের দাম (৳)" class="input-field">
+            <input type="number" id="admBotProfit" placeholder="ডেইলি প্রফিট (৳)" class="input-field">
+            <input type="number" id="admBotDuration" placeholder="মেয়াদ (দিন হিসেবে দিন)" class="input-field">
+            <button class="btn btn-success" onclick="window.addBotFromAdmin()">বট পাবলিশ করুন</button>
+        </div>
+    </div>
+
+    <!-- জাভাস্ক্রিপ্ট ফাইল কানেক্ট -->
+    <script type="module" src="script.js"></script>
+    <script>
+        function togglePanel() {
+            document.getElementById('userPanel').classList.toggle('hidden');
+            document.getElementById('adminPanel').classList.toggle('hidden');
+        }
+        function copyRefLink() {
+            let copyText = document.getElementById("refLinkInput"); 
+            copyText.select(); 
+            document.execCommand("copy");
+            let p = document.getElementById('popupNotification'); 
+            p.innerText = "📋 আপনার রেফারেল লিংক কপি করা হয়েছে!"; 
+            p.classList.add('show-popup');
+            setTimeout(() => p.classList.remove('show-popup'), 3000);
+        }
+    </script>
+</body>
+</html>
