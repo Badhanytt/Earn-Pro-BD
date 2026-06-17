@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Pro Mining</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+
+    <div id="popupNotification" class="popup hidden"></div>
+
+    <!-- 📢 লাইভ নোটিশ বোর্ড -->
+    <div class="card notice-card">
+        <div class="notice-title">📢 NOTICE:</div>
+        <div class="notice-text"><marquee id="lblLiveNotice" behavior="scroll" direction="left">Loading latest updates...</marquee></div>
+    </div>
+
+    <!-- ==================== ইউজার প্যানেল UI ==================== -->
+    <div id="userPanel">
+        <!-- 🏠 হোম ট্যাব সেকশন -->
+        <div id="tab-home" class="tab-content">
+            <div class="card">
+                <div class="flex">
+                    <div>
+                        <h3 id="txtUsername">Loading...</h3>
+                        <p class="balance-text">মেইন ব্যালেন্স: <b>৳<span id="lblMainBalance">0</span></b></p>
+                        <p class="pending-text">পেন্ডিং রেফার বোনাস: ৳<span id="lblPendingBalance">0</span></p>
+                    </div>
+                    <div id="adminBadge" class="hidden admin-btn-badge" onclick="togglePanel()">ADMIN PANEL</div>
+                </div>
+            </div>
+
+            <!-- একটিভ মাইনিং বট কাউন্টডাউন -->
+            <div class="card">
+                <h3>🤖 আপনার একটিভ মাইনিং বট</h3>
+                <div id="noBotActive">আপনার কোনো বট একটিভ নেই। "বট শপ" থেকে একটি বট কিনুন।</div>
+                <div id="botActiveArea" class="hidden">
+                    <p>বটের নাম: <b id="actBotName">-</b></p>
+                    <p>অবশিষ্ট সময়: <b id="actBotTimer" class="timer-color">00d 00h 00m 00s</b></p>
+                    <p id="actBotStatusMsg" class="sub-text" style="color: #ff9f43; font-weight: bold;"></p>
+                    <button id="btnClaimProfit" class="btn btn-success hidden" onclick="window.claimBotProfit()">Claim Profit</button>
+                </div>
+            </div>
+
+            <!-- বট শপ -->
+            <div class="card">
+                <h3>🛒 মাইনিং বট শপ</h3>
+                <div id="botShopArea">বট লোড হচ্ছে...</div>
+            </div>
+        </div>
+
+        <!-- 🏆 লিডারবোর্ড ট্যাব সেকশন -->
+        <div id="tab-leaderboard" class="tab-content hidden">
+            <div class="card">
+                <h3>🏆 লাইভ লিডারবোর্ড (টপ ১০ ইউজার)</h3>
+                <p class="sub-text">*প্রতি মিনিটে র্যান্ডম ইউজার এবং ডাটা আপডেট হয়</p>
+                <table>
+                    <thead><tr><th>Rank</th><th>Username</th><th>টোটাল প্রফিট</th></tr></thead>
+                    <tbody id="leaderboardBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 👤 প্রোফাইল, ডিপোজিট ও উইথড্র ট্যাব সেকশন -->
+        <div id="tab-profile" class="tab-content hidden">
+            <!-- 📥 ডিপোজিট সেকশন -->
+            <div class="card" style="border-color: var(--success);">
+                <h3>📥 ডিপোজিট / ক্যাশইন</h3>
+                <p id="dspDepositNote" class="dynamic-note-box">Loading deposit guidelines...</p>
+                <div class="admin-numbers-display">
+                    <p>🎯 আমাদের বিকাশ নাম্বার: <b id="dspBkashNum" class="num-color">Loading...</b></p>
+                    <p>🎯 আমাদের নগদ নাম্বার: <b id="dspNagadNum" class="num-color">Loading...</b></p>
+                    <p>🎯 আমাদের রকেট নাম্বার: <b id="dspRocketNum" class="num-color">Loading...</b></p>
+                </div>
+                <br>
+                <div class="flex" style="gap: 10px; margin-bottom: 10px;">
+                    <input type="number" id="usrDepAmount" placeholder="টাকার পরিমাণ (৳)" class="input-field" style="margin: 0;">
+                    <select id="usrDepMethod" class="input-field" style="margin: 0; width: 120px;">
+                        <option value="Bkash">বিকাশ</option>
+                        <option value="Nagad">নগদ</option>
+                        <option value="Rocket">রকেট</option>
+                    </select>
+                </div>
+                <input type="text" id="usrDepNumber" placeholder="আপনার পার্সোনাল অ্যাকাউন্ট নাম্বার" class="input-field">
+                <input type="text" id="usrDepTxID" placeholder="টাকা পাঠানোর পর TxID (ট্রানজেকশন আইডি) দিন" class="input-field">
+                <button class="btn btn-success" onclick="window.submitDeposit()">ডিপোজিট রিকোয়েস্ট পাঠান</button>
+            </div>
+
+            <!-- 📤 উইথড্র সেকশন -->
+            <div class="card" style="border-color: var(--danger);">
+                <h3>📤 উইথড্র / ক্যাশআউট (২% চার্জ)</h3>
+                <p id="dspWithdrawNote" class="dynamic-note-box" style="border-color: var(--danger); background: rgba(255,0,85,0.05);">Loading withdraw guidelines...</p>
+                <div class="flex" style="gap: 10px; margin-bottom: 10px;">
+                    <input type="number" id="usrWitAmount" placeholder="উইথড্র পরিমাণ (৳)" class="input-field" style="margin: 0;">
+                    <select id="usrWitMethod" class="input-field" style="margin: 0; width: 120px;">
+                        <option value="Bkash">বিকাশ</option>
+                        <option value="Nagad">নগদ</option>
+                        <option value="Rocket">রকেট</option>
+                    </select>
+                </div>
+                <input type="text" id="usrWitNumber" placeholder="আপনার পার্সোনাল অ্যাকাউন্ট নাম্বার" class="input-field">
+                <button class="btn btn-danger" onclick="window.submitWithdraw()">উইথড্র রিকোয়েস্ট পাঠান</button>
+            </div>
+
+            <!-- রেফারেল লিংক -->
+            <div class="card">
+                <h3>🔗 আপনার রেফারেল লিংক</h3>
+                <input type="text" id="refLinkInput" readonly class="input-field">
+                <button class="btn btn-secondary" onclick="copyRefLink()">লিংক কপি করুন</button>
+            </div>
+
+            <!-- ট্রানজেকশন হিস্ট্রি -->
+            <div class="card">
+                <h3>📜 আপনার ট্রানজেকশন হিস্ট্রি</h3>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead><tr><th>Type</th><th>Amount</th><th>Number</th><th>TxID/Info</th><th>Status</th></tr></thead>
+                        <tbody id="userHistoryTableBody"><tr><td colspan="5" style="text-align: center; color: #888;">কোনো হিস্ট্রি নেই</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📱 নেভিগেশন বার -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('home')"><span class="nav-icon">🏠</span><span class="nav-text">Home</span></div>
+            <div class="nav-item" onclick="switchTab('leaderboard')"><span class="nav-icon">🏆</span><span class="nav-text">Leaderboard</span></div>
+            <div class="nav-item" onclick="switchTab('profile')"><span class="nav-icon">👤</span><span class="nav-text">Profile</span></div>
+        </div>
+    </div>
+
+    <!-- ==================== 🔥 প্রিমিয়াম ক্যাপসুলেটেড এডমিন প্যানেল UI ==================== -->
+    <div id="adminPanel" class="hidden" style="margin-bottom: 40px;">
+        <div class="card admin-header-card">
+            <div class="flex">
+                <h2>🎛️ আল্ট্রা কন্ট্রোল ড্যাশবোর্ড</h2>
+                <button class="btn btn-back" onclick="togglePanel()">User View</button>
+            </div>
+        </div>
+
+        <!-- পরিসংখ্যান গ্রিড -->
+        <div class="admin-dashboard-grid">
+            <div class="stat-box" style="border-color: #ffe600;"><h4>টোটাল ইউজার</h4><p><span id="statTotalUsersCount">0</span> জন</p></div>
+            <div class="stat-box"><h4>ইউজার ব্যালেন্স</h4><p>৳<span id="statTotalUserBal">0</span></p></div>
+            <div class="stat-box" style="border-color: var(--success);"><h4>সফল ডিপোজিট</h4><p>৳<span id="statTotalDeposit">0</span></p></div>
+            <div class="stat-box" style="border-color: var(--danger);"><h4>সফল উইথড্র</h4><p>৳<span id="statTotalWithdraw">0</span></p></div>
+        </div>
+
+        <!-- ==================== ফোল্ডার বাটন সিস্টেমেটিক মেনু ==================== -->
+
+        <!-- 📂 বাটন ১: অল ইউজার ডাটাবেজ -->
+        <button class="btn btn-menu-folder" onclick="toggleFolder('folderAllUsers')">👥 অল রেজিস্টার্ড ইউজার ডাটাবেজ ▾</button>
+        <div id="folderAllUsers" class="folder-content hidden card" style="border-color: #00ff87;">
+            <div class="admin-section-title">ইউজার ডাটাবেজ লিস্ট (<span id="userCountBadge">0</span>)</div>
+            <div style="overflow-x: auto; max-height: 350px; border-radius: 8px;">
+                <table class="admin-user-table">
+                    <thead>
+                        <tr><th>টেলিগ্রাম ID</th><th>ইউজারনেম</th><th>মেইন ব্যালেন্স</th><th>একটিভ বট</th><th>স্ট্যাটাস</th><th>অ্যাকশন</th></tr>
+                    </thead>
+                    <tbody id="adminAllUsersTableBody"><tr><td colspan="6" style="text-align: center;">ডাটা লোড হচ্ছে...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 📂 বাটন ২: পেন্ডিং রিকোয়েস্ট গেটওয়ে -->
+        <button class="btn btn-menu-folder" style="background: linear-gradient(135deg, #ff9f43 0%, #ff5252 100%);" onclick="toggleFolder('folderPendingTxn')">📥 পেন্ডিং ডিপোজিট ও উইথড্র লিস্ট ▾</button>
+        <div id="folderPendingTxn" class="folder-content hidden card" style="border-color: orange;">
+            <div class="admin-section-title">পেন্ডিং ট্রানজেকশন গেটওয়ে</div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>User ID</th><th>Type</th><th>Amount</th><th>Method</th><th>Number</th><th>TxID/Info</th><th>Action</th></tr></thead>
+                    <tbody id="adminTxnTableBody"><tr><td colspan="7" style="text-align: center;">কোনো রিকোয়েস্ট পেন্ডিং নেই</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 📂 বাটন ৩: TxID ডিপোজিট সার্চ ইঞ্জিন -->
+        <button class="btn btn-menu-folder" style="background: linear-gradient(135deg, #ffe600 0%, #ffaa00 100%); color: black;" onclick="toggleFolder('folderTxidSearch')">🔍 TxID সার্চ ইঞ্জিন (ডিপোজিট ট্র্যাকার) ▾</button>
+        <div id="folderTxidSearch" class="folder-content hidden card" style="border-color: #ffe600;">
+            <div class="admin-section-title">TxID ডিপোজিট ট্র্যাকার</div>
+            <div class="search-container">
+                <input type="text" id="admSearchTxID" placeholder="ইউজারের পাঠানো TxID দিন" class="input-field" style="margin:0;">
+                <button class="btn btn-success search-btn" onclick="window.searchByTxIDAdmin()">Search</button>
+            </div>
+            <div id="admTxIDResultBox" class="hidden admin-result-box" style="border: 1px solid #ffe600;">
+                <h4>🎯 সার্চের ফলাফল:</h4>
+                <div id="admTxIDResultContent"></div>
+            </div>
+        </div>
+
+        <!-- 📂 বাটন ৪: স্পেসিফিক আইডি সার্চ ও ব্যালেন্স এডিটর -->
+        <button class="btn btn-menu-folder" onclick="toggleFolder('folderUserModify')">🎯 ইউজার আইডি সার্চ ও মডিফাই প্যানেল ▾</button>
+        <div id="folderUserModify" class="folder-content hidden card" style="border-color: cyan;">
+            <div class="admin-section-title">ম্যানুয়াল ইউজার কন্ট্রোলার</div>
+            <div class="search-container">
+                <input type="text" id="admSearchId" placeholder="ইউজার টেলিগ্রাম ID দিন" class="input-field" style="margin:0;">
+                <button class="btn search-btn" onclick="window.searchUserAdmin()">Search</button>
+            </div>
+            <div id="admUserResult" class="hidden admin-result-box">
+                <p>নাম: <span id="admUsrName"></span></p>
+                <p>ব্যালেন্স: ৳<input type="number" id="admUsrBal" class="small-input"></p>
+                <div class="flex" style="gap: 10px;">
+                    <button class="btn btn-success" onclick="window.updateUserBalAdmin()">Save</button>
+                    <button class="btn btn-danger" id="btnBlockAdmin" onclick="window.toggleBlockUserAdmin()">Block</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📂 বাটন ৫: গ্লোবাল নোটিশ, নাম্বার ও গাইডলাইন সেটিংস -->
+        <button class="btn btn-menu-folder" onclick="toggleFolder('folderGlobalSettings')">⚙️ নোটিশ, নাম্বার ও গাইডলাইন কনফিগ ▾</button>
+        <div id="folderGlobalSettings" class="folder-content hidden card" style="border-color: var(--primary);">
+            <div class="admin-section-title">অ্যাপ গ্লোবাল কন্ট্রোল সেটিংস</div>
+            <label class="admin-label">অ্যাপের নোটিশ টেক্সট লিখুন:</label>
+            <input type="text" id="admNoticeText" class="input-field">
+            
+            <div class="flex" style="gap: 10px;">
+                <div><label class="admin-label">বিকাশ নাম্বার:</label><input type="text" id="admBkashNum" class="input-field"></div>
+                <div><label class="admin-label">নগদ নাম্বার:</label><input type="text" id="admNagadNum" class="input-field"></div>
+                <div><label class="admin-label">রকেট নাম্বার:</label><input type="text" id="admRocketNum" class="input-field"></div>
+            </div>
+            <label class="admin-label">ডিপোজিট পেজের ইউজার নোট:</label>
+            <textarea id="admDepositNoteText" class="input-field" style="height: 50px; resize: none;"></textarea>
+            <label class="admin-label">উইথড্র পেজের ইউজার নোট:</label>
+            <textarea id="admWithdrawNoteText" class="input-field" style="height: 50px; resize: none;"></textarea>
+            <button class="btn btn-success" onclick="window.saveAdminSettings()">সব সেটিংস সেভ করুন</button>
+        </div>
+
+        <!-- 📂 বাটন ৬: রেফারেল বোনাস মেকার -->
+        <button class="btn btn-menu-folder" onclick="toggleFolder('folderReferralBonus')">🔗 রেফারেল বোনাস জেনারেটর ▾</button>
+        <div id="folderReferralBonus" class="folder-content hidden card" style="border-color: var(--admin-theme);">
+            <div class="admin-section-title">রেফার বোনাস সেটিংস</div>
+            <div class="search-container">
+                <input type="number" id="admRefBonusAmount" placeholder="বোনাসের পরিমাণ (৳)" class="input-field" style="margin:0;">
+                <button class="btn btn-success search-btn" onclick="window.setReferralBonusFromAdmin()">Save</button>
+            </div>
+            <p class="sub-text" style="margin-top: 8px; color: var(--success);">বর্তমানে সেট করা বোনাস: ৳<span id="admCurrentRefBonus">0</span></p>
+        </div>
+
+        <!-- 📂 বাটন ৭: নতুন মাইনিং বট মেকার এবং বটের লাইভ লিস্ট (যা আগে ছিল না) -->
+        <button class="btn btn-menu-folder" style="background: linear-gradient(135deg, #a55eea 0%, #4b7bec 100%);" onclick="toggleFolder('folderBotManager')">🤖 মাইনিং বট শপ ম্যানেজার ও ক্রিয়েটর ▾</button>
+        <div id="folderBotManager" class="folder-content hidden card" style="border-color: #a55eea;">
+            <div class="admin-section-title">⚙️ নতুন বট এড করুন</div>
+            <input type="text" id="admBotName" placeholder="বটের নাম" class="input-field">
+            <input type="number" id="admBotPrice" placeholder="বটের দাম (৳)" class="input-field">
+            <input type="number" id="admBotProfit" placeholder="টোটাল প্রফিট (৳)" class="input-field">
+            <input type="number" id="admBotDuration" placeholder="মেয়াদ (দিন হিসেবে দিন)" class="input-field">
+            <button class="btn btn-success" onclick="window.addBotFromAdmin()">বট পাবলিশ করুন</button>
+
+            <hr style="border: 1px solid rgba(255,255,255,0.05); margin: 20px 0;">
+
+            <div class="admin-section-title">📦 বর্তমানে শপে থাকা বটের লিস্ট ও ডিলিট প্যানেল</div>
+            <p class="sub-text">*নিচের লিস্ট থেকে যেকোনো ওল্ড বা ভুল বট ডিলিট বাটনে চাপ দিয়ে রিমুভ করতে পারবেন।</p>
+            <div style="overflow-x: auto; max-height: 250px;">
+                <table>
+                    <thead>
+                        <tr><th>বটের নাম</th><th>মূল্য</th><th>প্রফিট</th><th>মেয়াদ</th><th>অ্যাকশন</th></tr>
+                    </thead>
+                    <tbody id="adminBotListTableBody">
+                        <tr><td colspan="5" style="text-align: center; color: #888;">কোনো বট তৈরি করা নেই</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module" src="script.js"></script>
+    <script>
+        function togglePanel() {
+            document.getElementById('userPanel').classList.toggle('hidden');
+            document.getElementById('adminPanel').classList.toggle('hidden');
+        }
+        function toggleFolder(folderId) {
+            // একসাথে অন্য সব ফোল্ডার বন্ধ করে শুধুমাত্র সিলেক্টেড ফোল্ডারটি ওপেন/বন্ধ করার লজিক
+            let content = document.getElementById(folderId);
+            let isHidden = content.classList.contains('hidden');
+            document.querySelectorAll('.folder-content').forEach(f => f.classList.add('hidden'));
+            if(isHidden) {
+                content.classList.remove('hidden');
+            }
+        }
+        function copyRefLink() {
+            let copyText = document.getElementById("refLinkInput"); 
+            copyText.select(); document.execCommand("copy");
+            let p = document.getElementById('popupNotification'); 
+            p.innerText = "📋 আপনার রেফারেল লিংক কপি করা হয়েছে!"; p.classList.add('show-popup');
+            setTimeout(() => p.classList.remove('show-popup'), 3000);
+        }
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>

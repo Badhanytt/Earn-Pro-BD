@@ -1,0 +1,105 @@
+:root { 
+    --bg-gradient: radial-gradient(circle at 50% 50%, #1a1d29 0%, #0a0b10 100%);
+    --card-bg: rgba(30, 34, 47, 0.65); 
+    --card-border: rgba(255, 255, 255, 0.08);
+    --text-main: #f1f5f9; 
+    --text-muted: #94a3b8;
+    --primary: #00f0ff; 
+    --primary-glow: rgba(0, 240, 255, 0.4);
+    --success: #00ff87; 
+    --success-glow: rgba(0, 255, 135, 0.3);
+    --danger: #ff0055; 
+    --danger-glow: rgba(255, 0, 85, 0.3);
+    --admin-theme: #ff00e4; 
+}
+
+* { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'SF Pro Display', -apple-system, sans-serif; background: var(--bg-gradient); color: var(--text-main); margin: 0; padding: 15px 15px 85px 15px; overflow-x: hidden; }
+
+.card { 
+    background: var(--card-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px; border-radius: 16px; margin-bottom: 20px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); border: 1px solid var(--card-border); transition: transform 0.3s ease;
+}
+h2, h3 { margin-top: 0; color: var(--primary); text-shadow: 0 0 10px var(--primary-glow); }
+.flex { display: flex; justify-content: space-between; align-items: center; }
+
+/* 📁 স্পেশাল ফোল্ডার ক্যাটাগরি বাটন */
+.btn-menu-folder {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #fff; border: 1px solid rgba(255,255,255,0.1) !important;
+    padding: 15px !important; border-radius: 12px !important;
+    text-align: left !important; font-size: 14px !important;
+    margin-bottom: 8px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+    text-transform: none !important; display: flex; justify-content: space-between; align-items: center;
+}
+.btn-menu-folder:active { transform: scale(0.99); }
+.folder-content { margin-top: -4px; margin-bottom: 15px; border-top-left-radius: 0px !important; border-top-right-radius: 0px !important; animation: slideDown 0.25s ease-out; }
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.admin-section-title { font-size: 14px; font-weight: 800; color: #fff; margin-bottom: 12px; border-left: 4px solid var(--admin-theme); padding-left: 8px; }
+
+/* 📢 নোটিশ বোর্ড */
+.notice-card { background: linear-gradient(90deg, rgba(255, 0, 85, 0.15) 0%, rgba(0, 240, 255, 0.1) 100%); border: 1px solid rgba(255, 0, 85, 0.3); padding: 12px; display: flex; align-items: center; gap: 10px; border-radius: 12px; }
+.notice-title { font-weight: 900; color: var(--danger); font-size: 12px; white-space: nowrap; }
+.notice-text { width: 100%; overflow: hidden; color: #fff; font-size: 13px; font-weight: bold; }
+.dynamic-note-box { background: rgba(0, 255, 135, 0.05); border-left: 4px solid var(--success); padding: 10px; border-radius: 4px; font-size: 12px; color: #cbd5e1; margin-bottom: 15px; }
+
+/* 📱 নেভিগেশন বার */
+.bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; height: 65px; background: rgba(18, 20, 29, 0.85); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: space-around; align-items: center; z-index: 9999; }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; width: 30%; height: 100%; }
+.nav-icon { font-size: 20px; }
+.nav-text { font-size: 11px; font-weight: bold; color: var(--text-muted); margin-top: 4px; }
+.nav-item.active .nav-icon { transform: translateY(-4px) scale(1.1); filter: drop-shadow(0 0 8px var(--primary-glow)); }
+.nav-item.active .nav-text { color: var(--primary); }
+
+.admin-numbers-display { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; }
+.admin-numbers-display p { margin: 6px 0; font-size: 13px; color: var(--text-muted); }
+.num-color { color: #ffe600; }
+
+.btn { position: relative; background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%); color: #000; border: none; padding: 12px 20px; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; width: 100%; transition: all 0.2s ease; text-transform: uppercase; box-shadow: 0 4px 0px #0051b3; }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0px #0051b3; }
+.btn-success { background: linear-gradient(135deg, #00ff87 0%, #60efff 100%); box-shadow: 0 4px 0px #00a354; }
+.btn-danger { background: linear-gradient(135deg, #ff0055 0%, #ff5000 100%); color: #fff; box-shadow: 0 4px 0px #b3003b; }
+.btn-secondary { background: linear-gradient(135deg, #334155 0%, #1e293b 100%); color: #fff; box-shadow: 0 4px 0px #0f172a; }
+.btn-back { width: auto; background: #64748b; color: #fff; box-shadow: 0 4px 0px #334155; }
+
+.input-field { width: 100%; padding: 12px; background: rgba(10, 11, 16, 0.8); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; margin-bottom: 12px; font-size: 14px; }
+.input-field:focus { outline: none; border-color: var(--primary); }
+.admin-label { display: block; font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: bold; }
+
+.balance-text { margin: 5px 0; font-size: 16px; color: var(--text-muted); }
+.balance-text b { color: var(--success); font-size: 24px; text-shadow: 0 0 15px var(--success-glow); }
+.pending-text { margin: 2px 0; font-size: 13px; color: var(--text-muted); }
+.admin-btn-badge { background: linear-gradient(135deg, #ffe600 0%, #ff8800 100%); padding: 6px 14px; border-radius: 20px; font-size: 11px; font-weight: 900; color: #000; cursor: pointer; }
+.sub-text { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+.timer-color { color: #ff9f43; font-size: 18px; font-family: monospace; font-weight: bold; }
+
+table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+th, td { padding: 10px; text-align: left; font-size: 12px; white-space: nowrap; }
+th { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+td { background: rgba(255,255,255,0.03); }
+
+/* 👥 অল ইউজার টেবিল কাস্টম থিম */
+.admin-user-table th { background: #1a1d29; position: sticky; top: 0; z-index: 10; color: var(--primary); }
+.admin-user-table td { padding: 12px; background: rgba(15, 17, 26, 0.7); }
+
+.hidden { display: none !important; }
+.small-input { width: 90px; padding: 5px; background: #000; color: #00ff87; border: 1px solid #333; border-radius: 4px; }
+
+.popup { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #141821 0%, #0a0b10 100%); color: var(--primary); padding: 14px 24px; border-radius: 20px; font-weight: bold; z-index: 10000; border: 1px solid var(--primary); font-size: 13px; text-align: center; width: 85%; max-width: 360px; transition: all 0.4s ease; }
+.popup.show-popup { top: 25px; }
+.action-btn-sm { padding: 5px 10px; font-size: 10px; width: auto; display: inline-block; border-radius: 6px; margin-right: 4px; box-shadow: none !important; }
+
+.admin-header-card { background: linear-gradient(135deg, rgba(44, 24, 56, 0.8) 0%, rgba(20, 10, 30, 0.9) 100%); border-color: rgba(255, 0, 228, 0.2); }
+.admin-header-card h2 { color: var(--admin-theme); }
+.admin-dashboard-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+.stat-box { background: rgba(255,255,255,0.02); border: 1px solid var(--card-border); border-radius: 12px; padding: 12px; text-align: center; }
+.stat-box h4 { margin: 0 0 5px 0; font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+.stat-box p { margin: 0; font-size: 15px; font-weight: 800; color: var(--primary); }
+.search-container { display: flex; gap: 8px; }
+.search-btn { width: 90px; }
+.admin-result-box { margin-top: 15px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; }
