@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Quantum Bot Platform</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -13,7 +18,7 @@
     <div id="suspended-screen" class="modal-overlay hidden" style="background:#090514; z-index:999999;">
         <div class="modal-box" style="border-color:#ef4444; box-shadow: 0 0 30px rgba(239,68,68,0.6);">
             <h2 style="color:#ef4444;"><i class="fa-solid fa-ban"></i> Access Denied</h2>
-            <p style="font-size:16px; font-weight:bold; color:#fff; margin:20px 0;">You are a suspended contact us</p>
+            <p style="font-size:16px; font-weight:bold; color:#fff; margin:20px 0;">You are suspended contact us</p>
             <p style="font-size:12px; color:#94a3b8;">This device has been permanently blocked by administration.</p>
         </div>
     </div>
@@ -63,7 +68,7 @@
                     <i class="fas fa-check-circle animate__animated animate__swing animate__infinite"></i>
                     <div>
                         <h4>লাইভ পেমেন্ট প্রুফ</h4>
-                        <p>সাম্প্রতিক সফল উইথড্র রিকোয়েস্ট সমূহ</p>
+                        <p>সাম্প্রতিক সফল উইথड्र রিকোয়েস্ট সমূহ</p>
                     </div>
                 </div>
                 <div id="fake-transaction-list" class="proof-scroll-container"></div>
@@ -80,7 +85,7 @@
             <div class="main-card animate__animated animate__fadeIn">
                 <div class="leaderboard-header">
                     <i class="fas fa-trophy animate__animated animate__pulse animate__infinite"></i>
-                    <h3>সেরা アーナーズ リーダーボード</h3>
+                    <h3>সেরা আর্নার্স লিডারবোর্ড</h3>
                     <p>সর্বোচ্চ আয়কারী টপ ১০ মেম্বারদের তালিকা</p>
                 </div>
                 <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin-bottom: 15px;">
@@ -321,9 +326,6 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
