@@ -17,6 +17,35 @@ let liveInterval = null;
 let fakeTxInterval = null;
 let leaderboardInterval = null;
 
+// ২৫ জনের কাস্টম ডাইনামিক ফেক মেম্বার পুল (লিডারবোর্ডের জন্য)
+let fakeLeaderboardData = [
+    { name: "Rafiqul Islam", balance: 5420, tag: 'কিং মেম্বার' },
+    { name: "Al Amin Hossain", balance: 4850, tag: 'প্রো Elite' },
+    { name: "Sumaiya Akter", balance: 4120, tag: 'এলিট মেম্বার' },
+    { name: "Tariqul Islam", balance: 3950, tag: 'গোল্ড মেম্বার' },
+    { name: "Nayeem Ahmed", balance: 3820, tag: 'গোল্ড মেম্বার' },
+    { name: "Sabbir Rahman", balance: 3540, tag: 'সিলভার মেম্বার' },
+    { name: "Rokeya Begum", balance: 3120, tag: 'ম্যাট্রিক্স প্রো' },
+    { name: "Ariful Islam", balance: 2950, tag: 'নিয়মিত মেম্বার' },
+    { name: "Fahim Shahriar", balance: 2600, tag: 'নতুন মেম্বার' },
+    { name: "Anika Tahsin", balance: 2450, tag: 'নতুন মেম্বার' },
+    { name: "Zayan Ahmed", balance: 2310, tag: 'সিলভার মেম্বার' },
+    { name: "Taskin Ahmed", balance: 2200, tag: 'নিয়মিত মেম্বার' },
+    { name: "Nusrat Jahan", balance: 2150, tag: 'এলিট মেম্বার' },
+    { name: "Hasan Al Banna", balance: 2050, tag: 'গোল্ড মেম্বার' },
+    { name: "Tanvir Mahtab", balance: 1980, tag: 'সিলভার মেম্বার' },
+    { name: "Sajid Afridi", balance: 1870, tag: 'নতুন মেম্বার' },
+    { name: "Mehedi Hasan", balance: 1750, tag: 'নিয়মিত মেম্বার' },
+    { name: "Riya Khandaker", balance: 1690, tag: 'ম্যাট্রিক্স প্রো' },
+    { name: "Asif Ent.", balance: 1600, tag: 'প্রো Elite' },
+    { name: "Imran Khan", balance: 1540, tag: 'সিলভার মেম্বার' },
+    { name: "Sadia Afrin", balance: 1420, tag: 'নতুন মেম্বার' },
+    { name: "Rakibul Pro", balance: 1350, tag: 'কিং মেম্বার' },
+    { name: "Monir Hossain", balance: 1200, tag: 'নিয়মিত মেম্বার' },
+    { name: "Tamanna Islam", balance: 1150, tag: 'নতুন মেম্বার' },
+    { name: "Sakib ALL Round", balance: 1050, tag: 'গোল্ড মেম্বার' }
+];
+
 // ==========================================
 // ২. FIREBASE CONFIGURATION
 // ==========================================
@@ -58,7 +87,6 @@ document.addEventListener("DOMContentLoaded", () => {
         let user = snapshot.val();
 
         if (user) {
-            // যদি ইউজার ব্যান থাকে, আপনার ডিজাইন করা suspended-screen শো করবে
             if (user.isBlocked === true) {
                 document.getElementById('auth-page').classList.add('hidden');
                 document.getElementById('main-app').classList.add('hidden');
@@ -67,7 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             loginUserFlow(user);
         } else {
-            // নতুন ইউজার হলে অটোমেটিক ব্যাকএন্ড অ্যাকাউন্ট তৈরি (টেলিগ্রাম আইডি বেসড)
             let randomDigits = Math.floor(1000 + Math.random() * 9000);
             let myNewPermanentRefCode = (firstName.substring(0,4).replace(/\s+/g, '') + randomDigits).toUpperCase();
 
@@ -80,16 +107,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 balance: 0,
                 myOwnRefCode: myNewPermanentRefCode, 
                 referredBy: startParam,   
-                deviceId: "TG-" + Math.floor(100000 + Math.random() * 900000), // ডাইনামিক ডিভাইস আইডি জেনারেট
+                deviceId: "TG-" + Math.floor(100000 + Math.random() * 900000), 
                 hasBoughtBot: false,
                 isBlocked: false,
+                refWalletPending: 0,
+                refWalletSuccess: 0,
                 joinedAt: new Date().toISOString()
             };
 
             db.ref('users/' + userId).set(newUserObject).then(() => {
-                // নতুন রেফারার থাকলে তাকে রিওয়ার্ড সাইকেল প্রসেস করা
+                // নতুন ইউজার জয়েন করলে: কাস্টম লেভেল ১ ও লেভেল ৩ বোনাস রেন্ডার করা (পেন্ডিং মোডে)
                 if(startParam !== "none") {
-                    processReferralBonusOnReg(startParam);
+                    processReferralActionChain(startParam, "REGISTRATION", userId);
                 }
                 loginUserFlow(newUserObject);
             });
@@ -97,7 +126,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// HTML-এর ম্যানুয়াল লগইন/রেজিস্ট্রেশন বাটন হ্যান্ডল করার ব্যাকআপ মেথড
 function switchAuth(type) {
     if(type === 'register') {
         document.getElementById('tab-login-btn').classList.remove('active-tab-btn');
@@ -113,7 +141,6 @@ function switchAuth(type) {
 }
 
 function handleAuth() {
-    // টেলিগ্রাম মিনি অ্যাপ অটো লগইন হ্যান্ডল করছে, ম্যানুয়াল ক্লিকের ক্ষেত্রে রিলোড এভয়েড করার জন্য প্রোটেকশন
     alert("Telegram Secure Gateway Auto-Verified Your Account! Loading Matrix...");
 }
 
@@ -125,7 +152,6 @@ function loginUserFlow(user) {
     
     switchTab('home', document.querySelector('.bottom-nav .nav-item'));
     
-    // আপনার অ্যাপের রিয়েলটাইম মেথডসমূহ চালু করা
     syncUserData();
     startLiveTimerLoop();
     triggerNoticeModal();
@@ -148,6 +174,7 @@ function switchTab(tabId, el) {
     if(el) el.classList.add('active');
 
     if(tabId === 'profile') loadProfileData();
+    if(tabId === 'leaderboard') loadLeaderboard(); // ট্যাব সুইচ করলেই ফেক মেম্বার চেঞ্জ হবে
 }
 
 function toggleWalletView(type) {
@@ -174,11 +201,9 @@ function syncUserData() {
         document.getElementById('user-display-name').innerText = data.username;
         document.getElementById('user-balance').innerText = parseFloat(data.balance).toFixed(2);
         
-        // রান থাকা বটগুলোর লিস্ট রিফ্রেশ করা
-        loadMyRunningBots();
+        triggerCloudBotsEvaluation(); // সার্ভার ট্র্যাকিং এভয়েড করে ডাইনামিক রেন্ডার
     });
 
-    // মার্কেটপ্লেসের বট লোড করা
     loadBotMarket();
 }
 
@@ -189,8 +214,7 @@ function loadProfileData() {
     document.getElementById('user-ref-pending').innerText = parseFloat(currentUser.refWalletPending || 0).toFixed(2);
     document.getElementById('user-ref-success').innerText = parseFloat(currentUser.refWalletSuccess || 0).toFixed(2);
     
-    // টেলিগ্রামের ইনভাইটেশন লিংক জেনারেট
-    let botUsername = "QuantumProBD_bot"; // আপনার বটের ইউজারনেম
+    let botUsername = "QuantumProBD_bot"; 
     document.getElementById('permanent-ref-code').value = `https://t.me/${botUsername}/app?startapp=${currentUser.myOwnRefCode}`;
 
     loadUserHistory();
@@ -205,10 +229,10 @@ function copyRefCode() {
 }
 
 // ==========================================
-// ৬. BOT MARKETPLACE & INCOME CORE LOGIC
+// ৬. BOT MARKETPLACE & INCOME CORE LOGIC (হোল্ড ও ৪-ধাপের রেফার সিস্টেম মিশ্রিত)
 // ==========================================
 function loadBotMarket() {
-    db.ref('bots').on('value', snapshot => {
+    db.ref('bots').once('value', snapshot => {
         let market = document.getElementById('bot-market');
         market.innerHTML = '';
         if(!snapshot.exists()) {
@@ -223,7 +247,7 @@ function loadBotMarket() {
                     <p>Price: <b>${b.price} TK</b></p>
                     <p>Total Return: <b style="color:#2dd4bf;">${b.profit} TK</b></p>
                     <p>Duration: <b>${b.days} Days</b></p>
-                    <button onclick="buyBot('${child.key}', ${b.price})">Rent Bot</button>
+                    <button id="btn-buy-${child.key}" onclick="buyBot('${child.key}', ${b.price})">Rent Bot</button>
                 </div>
             `;
         });
@@ -231,180 +255,233 @@ function loadBotMarket() {
 }
 
 function buyBot(botId, price) {
+    let buyBtn = document.getElementById(`btn-buy-${botId}`);
+    if(buyBtn) buyBtn.disabled = true; // ডাবল সাবমিশন লোডিং প্রটেকশন
+
     if(parseFloat(currentUser.balance) < price) {
+        if(buyBtn) buyBtn.disabled = false;
         return alert("Insufficient balance! Please deposit cash first.");
-    }
-
-    // 🔒 [নিরাপত্তা লক] একই বট ডাবল কেনা আটকানোর চেক
-    let isAlreadyRunning = false;
-    if (currentUser.runningBots) {
-        for (let key in currentUser.runningBots) {
-            if (currentUser.runningBots[key].botId === botId) {
-                isAlreadyRunning = true;
-                break;
-            }
-        }
-    }
-
-    if (isAlreadyRunning) {
-        return alert("এই লেভেলের বটটি আপনার অলরেডি একটি রানিং আছে! এটি শেষ না হওয়া পর্যন্ত একই লেভেলের বট দ্বিতীয়বার কিনতে পারবেন না।");
     }
 
     db.ref('bots/' + botId).once('value', snap => {
         let bData = snap.val();
-        if(!bData) return;
+        if(!bData) { if(buyBtn) buyBtn.disabled = false; return; }
 
         let newBalance = parseFloat((currentUser.balance - price).toFixed(2));
+        let pId = Date.now();
+        let endTime = pId + (bData.days * 24 * 60 * 60 * 1000);
         
-        let myNewBot = {
-            botId: botId,
-            name: bData.name,
+        let globalPurchaseNode = {
+            id: pId,
+            username: currentUser.username,
+            userId: userId,
+            botName: bData.name,
             price: bData.price,
-            profit: bData.profit,
-            days: bData.days,
-            dailyReturn: parseFloat((bData.profit / bData.days).toFixed(2)),
-            lastClaimed: new Date().toISOString(),
-            purchasedAt: new Date().toISOString(),
-            daysPassed: 0
+            profitAmount: bData.profit,
+            endTime: endTime,
+            status: "running"
         };
 
-        // ব্যালেন্স আপডেট এবং রানিং বটে ডেটা পুশ
+        // ইউজারের ব্যালেন্স কাটা এবং বট স্টেট দেওয়া
         db.ref('users/' + userId + '/balance').set(newBalance);
         db.ref('users/' + userId + '/hasBoughtBot').set(true);
-        
-        // প্রথমবার বট কিনলে পেন্ডিং রেফারেল বোনাস মেইন ওয়ালেটে সাকসেসফুল ক্লেম করা
-        let pendingBonus = parseFloat(currentUser.refWalletPending || 0);
-        if(pendingBonus > 0) {
-            db.ref('users/' + userId + '/refWalletSuccess').transaction(c => (parseFloat(c) || 0) + pendingBonus);
-            db.ref('users/' + userId + '/balance').transaction(c => (parseFloat(c) || 0) + pendingBonus);
-            db.ref('users/' + userId + '/refWalletPending').set(0);
-        }
 
-        db.ref('users/' + userId + '/runningBots').push(myNewBot).then(() => {
+        db.ref('globalPurchases/' + pId).set(globalPurchaseNode).then(() => {
+            // একই লেভেলের পূর্বে আটকে থাকা বা হোল্ডে থাকা বটগুলোকে রিলিজ করা
+            releaseOlderBotsOfSameLevel(bData.price, pId);
+
+            // ৪-ধাপের অ্যাকশন ভিত্তিক রেফারেল বোনাস রিলিজ বা পেন্ডিং চেইন প্রসেসিং
+            if(currentUser.referredBy && currentUser.referredBy !== "none") {
+                processReferralActionChain(currentUser.referredBy, "BOT_PURCHASE", userId);
+            }
+
             alert(`Successfully activated ${bData.name}!`);
-            
-            // টু-লেভেল রেফারেল কমিশন ডিস্ট্রিবিউট করা
-            distributeBotPurchaseCommissions(price);
-        });
+            if(buyBtn) buyBtn.disabled = false;
+        }).catch(() => { if(buyBtn) buyBtn.disabled = false; });
     });
 }
 
-function loadMyRunningBots() {
-    let container = document.getElementById('my-bots');
-    container.innerHTML = '';
-    
-    db.ref('users/' + userId + '/runningBots').once('value', snapshot => {
-        if(!snapshot.exists()) {
-            container.innerHTML = '<p style="color:#94a3b8; font-size:12px; padding:10px;">You do not have any running bots currently.</p>';
-            return;
-        }
+// একই প্রাইসের পুরোনো হোল্ডে থাকা বট রিলিজ মেকানিজম
+function releaseOlderBotsOfSameLevel(botPrice, currentPurchaseId) {
+    db.ref('globalPurchases').once('value', snapshot => {
         snapshot.forEach(child => {
-            let rb = child.val();
-            container.innerHTML += `
-                <div class="running-bot-card card-3d" style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:12px; margin-bottom:8px; border-radius:8px;">
-                    <div>
-                        <h4 style="margin:0; font-size:14px; color:#fff;">${rb.name}</h4>
-                        <p style="margin:2px 0; font-size:12px; color:#cbd5e1;">Daily Income: <b style="color:#10b981;">+${rb.dailyReturn} TK</b></p>
-                        <p style="margin:0; font-size:11px; color:#94a3b8;">Cycle: <b>${rb.daysPassed}/${rb.days} Days</b></p>
-                    </div>
-                    <button class="btn-claim-income" id="btn-claim-${child.key}" onclick="claimBotIncome('${child.key}')" style="width:auto; padding:6px 15px; font-size:12px; background:#10b981;">Claim</button>
-                </div>
-            `;
+            let p = child.val();
+            if (p.id !== currentPurchaseId && p.price === botPrice && p.status === 'waiting') {
+                db.ref('globalPurchases/' + child.key + '/status').set('claimable');
+            }
         });
     });
 }
 
-function claimBotIncome(key) {
-    let btn = document.getElementById(`btn-claim-${key}`);
-    btn.disabled = true;
+// বটের লাইভ এভালুয়েশন এবং ২ দিন এক্সটেনশন লুপ (সার্ভারে রিয়েলটাইম পুশ কমায়)
+function triggerCloudBotsEvaluation() {
+    db.ref('globalPurchases').once('value', snapshot => {
+        let container = document.getElementById('my-bots');
+        if(!container) return;
+        container.innerHTML = '';
+        let count = 0;
 
-    db.ref('users/' + userId + '/runningBots/' + key).once('value', snapshot => {
-        let rb = snapshot.val();
-        if(!rb) return;
+        snapshot.forEach(child => {
+            let p = child.val();
+            if(p.userId !== userId) return;
+            count++;
 
-        let now = new Date();
-        let lastClaim = new Date(rb.lastClaimed);
-        let diffHours = (now - lastClaim) / (1000 * 60 * 60);
+            let now = Date.now();
+            let timeLeft = p.endTime - now;
 
-        if(diffHours < 24) {
-            let remainingHours = Math.ceil(24 - diffHours);
-            alert(`You can claim income again in ${remainingHours} hours!`);
-            btn.disabled = false;
-            return;
-        }
+            // রানিং বটের সময় শেষ হলে অটো ২ দিন বাড়িয়ে 'waiting' করা
+            if (p.status === "running" && timeLeft <= 0) {
+                let extendedTime = now + (2 * 24 * 60 * 60 * 1000); 
+                db.ref('globalPurchases/' + child.key).update({ status: "waiting", endTime: extendedTime });
+                p.status = "waiting"; p.endTime = extendedTime; timeLeft = extendedTime - now;
+            }
+            
+            // হোল্ড বটের ২ দিনও পার হয়ে গেলে পুনরায় মেয়াদ ২ দিন বৃদ্ধি করা
+            if (p.status === "waiting" && timeLeft <= 0) {
+                let extendedTime = now + (2 * 24 * 60 * 60 * 1000);
+                db.ref('globalPurchases/' + child.key + '/endTime').set(extendedTime);
+                p.endTime = extendedTime; timeLeft = extendedTime - now;
+            }
 
-        let nextDaysPassed = (rb.daysPassed || 0) + 1;
-        let currentWalletBalance = parseFloat(currentUser.balance) || 0;
-        let updatedWalletBalance = parseFloat((currentWalletBalance + rb.dailyReturn).toFixed(2));
+            let cardHtml = `<div class="running-bot-card card-3d" style="margin-bottom: 10px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px;">
+                <h4 style="margin:0; font-size:14px; color:#fff;">🤖 ${p.botName} (Level: ৳ ${p.price})</h4>`;
 
-        if(nextDaysPassed >= parseInt(rb.days)) {
-            db.ref('users/' + userId + '/balance').set(updatedWalletBalance);
-            db.ref('users/' + userId + '/runningBots/' + key).remove();
-            alert(`Bot runtime cycle complete! Total profit added to wallet.`);
-        } else {
-            db.ref('users/' + userId + '/balance').set(updatedWalletBalance);
-            db.ref('users/' + userId + '/runningBots/' + key + '/lastClaimed').set(now.toISOString());
-            db.ref('users/' + userId + '/runningBots/' + key + '/daysPassed').set(nextDaysPassed);
-            alert(`Successfully claimed today's profit: +${rb.dailyReturn} TK`);
-        }
-        btn.disabled = false;
+            if (p.status === "running") {
+                let days = Math.floor(timeLeft / (1000 * 60 * 60 * 24)), hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+                let minutes = Math.floor((timeLeft / (1000 * 60)) % 60), seconds = Math.floor((timeLeft / 1000) % 60);
+                cardHtml += `
+                    <p style="margin:4px 0; font-size:12px; color:#f59e0b;">Status: ⏳ Mining Running</p>
+                    <p style="margin:0; font-size:12px; color:#2dd4bf;">Ends In: ${days}d ${hours}h ${minutes}m ${seconds}s</p>`;
+            } else if (p.status === "waiting") {
+                cardHtml += `
+                    <p style="margin:4px 0; font-size:12px; color:#ef4444; font-weight:bold;">⚠️ Status: Hold / Funding Quota Empty</p>
+                    <p style="font-size:11px; color:#94a3b8; margin:2px 0;">Profit unlocks when someone activates this level bot.</p>`;
+            } else if (p.status === "claimable") {
+                cardHtml += `
+                    <p style="margin:4px 0; font-size:12px; color:#10b981;">Status: 🎉 Fund Unlocked</p>
+                    <button class="btn-claim-income" style="padding:4px 10px; background:#10b981; font-size:12px; width:100%; margin-top:5px;" onclick="claimProfit('${child.key}')">Claim ৳ ${p.profitAmount}</button>`;
+            } else {
+                cardHtml += `<p style="margin:4px 0; font-size:12px; color:#64748b;">Status: ✅ Completed (+৳ ${p.profitAmount})</p>`;
+            }
+            cardHtml += `</div>`;
+            container.innerHTML += cardHtml;
+        });
+        if(count === 0) container.innerHTML = '<p style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">You do not have any active bots.</p>';
     });
 }
 
-function processReferralBonusOnReg(refCode) {
-    db.ref('sysSettings/referralBonus').once('value', snap => {
-        let bonusAmt = parseFloat(snap.val()) || 0;
-        if(bonusAmt <= 0) return;
-
-        db.ref('users').once('value', allUsers => {
-            allUsers.forEach(child => {
-                if(child.val().myOwnRefCode === refCode) {
-                    // রেফারার যদি অলরেডি বট কিনে থাকে তবে ডাইরেক্ট ব্যালেন্স, নাহলে পেন্ডিং ওয়ালেটে ঢুকবে
-                    if(child.val().hasBoughtBot === true) {
-                        db.ref('users/' + child.key + '/balance').transaction(c => (parseFloat(c) || 0) + bonusAmt);
-                        db.ref('users/' + child.key + '/refWalletSuccess').transaction(c => (parseFloat(c) || 0) + bonusAmt);
-                    } else {
-                        db.ref('users/' + child.key + '/refWalletPending').transaction(c => (parseFloat(c) || 0) + bonusAmt);
-                    }
-                }
+function claimProfit(purchaseKey) {
+    db.ref('globalPurchases/' + purchaseKey).once('value', snapshot => {
+        let p = snapshot.val();
+        if(p && p.status === 'claimable') {
+            let finalBal = parseFloat((parseFloat(currentUser.balance) + parseFloat(p.profitAmount)).toFixed(2));
+            db.ref('users/' + userId + '/balance').set(finalBal);
+            db.ref('globalPurchases/' + purchaseKey + '/status').set('completed').then(() => {
+                alert(`🎉 ৳ ${p.profitAmount} successfully credited to main balance!`);
             });
-        });
+        }
     });
 }
 
-function distributeBotPurchaseCommissions(botPrice) {
-    db.ref('sysSettings').once('value', snap => {
-        let settings = snap.val() || {};
-        let lvl1Rate = parseFloat(settings.lvl1Commission) || 0;
-        let lvl2Rate = parseFloat(settings.lvl2Commission) || 0;
+// 👑 ৪-ধাপের অনন্য কাস্টম অ্যাকশন ভিত্তিক এমএলএম রেফারেল ইঞ্জিন (পেন্ডিং ও মেইন ওয়ালেট কন্ট্রোল)
+function processReferralActionChain(refCode, actionType, triggeringUserId) {
+    db.ref('sysSettings').once('value', settingsSnap => {
+        let s = settingsSnap.val() || {};
+        let lvl1Amt = parseFloat(s.referralBonus) || 0; // Level 1 (Registration)
+        let lvl2Amt = parseFloat(s.lvl2Commission) || 0; // Level 2 (B buys bot)
+        let lvl3Amt = parseFloat(s.lvl3Commission) || 0; // Level 3 (B refers C)
+        let lvl4Amt = parseFloat(s.lvl4Commission) || 0; // Level 4 (C buys bot)
 
-        if(currentUser.referredBy && currentUser.referredBy !== "none") {
-            db.ref('users').once('value', allUsersSnap => {
-                let uMap = allUsersSnap.val();
-                let lvl1UserKey = null;
-                let lvl2UserKey = null;
+        db.ref('users').once('value', allUsersSnap => {
+            let uMap = allUsersSnap.val();
+            
+            // ১. খুজে বের করা কে কাকে রেফার করেছে (চেইন ডিটেকশন)
+            let userA_Key = null; // মূল আপলাইনার
+            let userB_Key = null; // সরাসরি ইনভাইট হওয়া ইউজার
 
+            // চেইন ডিটেক্ট করতে ট্রিগারিং ইউজারের ডাটা চেক
+            let triggerUser = uMap[triggeringUserId];
+            if(!triggerUser) return;
+
+            if (actionType === "REGISTRATION") {
+                // User A রেফার কোড দিয়ে B রেজিস্ট্রেশন করেছে
                 for(let k in uMap) {
-                    if(uMap[k].myOwnRefCode === currentUser.referredBy) lvl1UserKey = k;
+                    if(uMap[k].myOwnRefCode === refCode) userA_Key = k;
                 }
+                if(userA_Key) {
+                    // Level 1 বোনাস জেনারেট হচ্ছে -> কন্ডিশনাল পেন্ডিং চেক
+                    if(uMap[userA_Key].hasBoughtBot === true) {
+                        // User A যদি অলরেডি বট কেনা থাকে তবে মেইন ব্যালেন্স ও সাকসেস যোগ
+                        db.ref('users/' + userA_Key + '/balance').transaction(c => parseFloat((parseFloat(c || 0) + lvl1Amt).toFixed(2)));
+                        db.ref('users/' + userA_Key + '/refWalletSuccess').transaction(c => parseFloat((parseFloat(c || 0) + lvl1Amt).toFixed(2)));
+                    } else {
+                        // অন্যথায় পেন্ডিং ব্যালেন্সে হোল্ড হবে
+                        db.ref('users/' + userA_Key + '/refWalletPending').transaction(c => parseFloat((parseFloat(c || 0) + lvl1Amt).toFixed(2)));
+                    }
+                }
+            } 
+            
+            else if (actionType === "BOT_PURCHASE") {
+                // User B বট বাই করেছে -> User A পাবে Level 2 বোনাস
+                for(let k in uMap) {
+                    if(uMap[k].myOwnRefCode === triggerUser.referredBy) userA_Key = k;
+                }
+                if(userA_Key) {
+                    // Level 2 বোনাস জেনারেট: B নিজে বট কিনেছে, তাই A এর প্রোফাইল অনুযায়ী চেক হবে
+                    if(uMap[userA_Key].hasBoughtBot === true) {
+                        db.ref('users/' + userA_Key + '/balance').transaction(c => parseFloat((parseFloat(c || 0) + lvl2Amt).toFixed(2)));
+                        db.ref('users/' + userA_Key + '/refWalletSuccess').transaction(c => parseFloat((parseFloat(c || 0) + lvl2Amt).toFixed(2)));
+                    } else {
+                        db.ref('users/' + userA_Key + '/refWalletPending').transaction(c => parseFloat((parseFloat(c || 0) + lvl2Amt).toFixed(2)));
+                    }
 
-                if(lvl1UserKey) {
-                    let lvl1Data = uMap[lvl1UserKey];
-                    let oldBal1 = parseFloat(lvl1Data.balance) || 0;
-                    db.ref('users/' + lvl1UserKey + '/balance').set(parseFloat((oldBal1 + lvl1Rate).toFixed(2)));
+                    // গুরুত্বপূর্ণ: B এর প্রথম বট ক্রয়ে B এর নিজের প্রোফাইলে পূর্বে জমে থাকা সমস্ত পেন্ডিং বোনাস মেইন ওয়ালেটে রিলিজ করা
+                    let bPending = parseFloat(uMap[triggeringUserId].refWalletPending || 0);
+                    if(bPending > 0) {
+                        db.ref('users/' + triggeringUserId + '/balance').transaction(c => parseFloat((parseFloat(c || 0) + bPending).toFixed(2)));
+                        db.ref('users/' + triggeringUserId + '/refWalletSuccess').transaction(c => parseFloat((parseFloat(c || 0) + bPending).toFixed(2)));
+                        db.ref('users/' + triggeringUserId + '/refWalletPending').set(0);
+                    }
 
-                    if(lvl1Data.referredBy && lvl1Data.referredBy !== "none") {
-                        for(let k2 in uMap) {
-                            if(uMap[k2].myOwnRefCode === lvl1Data.referredBy) lvl2UserKey = k2;
+                    // Level 4 ডিপেন্ডেন্সি চেক (C যদি বট কিনে থাকে তবে তার ৩য় আপলাইনারকে ট্র্যাক করা)
+                    let parentOfA_Key = null;
+                    if(uMap[userA_Key].referredBy && uMap[userA_Key].referredBy !== "none") {
+                        for(let k4 in uMap) {
+                            if(uMap[k4].myOwnRefCode === uMap[userA_Key].referredBy) parentOfA_Key = k4;
                         }
-                        if(lvl2UserKey) {
-                            let oldBal2 = parseFloat(uMap[lvl2UserKey].balance) || 0;
-                            db.ref('users/' + lvl2UserKey + '/balance').set(parseFloat((oldBal2 + lvl2Rate).toFixed(2)));
+                        if(parentOfA_Key) {
+                            // এটি হলো Level 4 সিনারিও (C বট কিনেছে আর Parent of A বোনাস পাচ্ছে)
+                            if(uMap[parentOfA_Key].hasBoughtBot === true) {
+                                db.ref('users/' + parentOfA_Key + '/balance').transaction(c => parseFloat((parseFloat(c || 0) + lvl4Amt).toFixed(2)));
+                                db.ref('users/' + parentOfA_Key + '/refWalletSuccess').transaction(c => parseFloat((parseFloat(c || 0) + lvl4Amt).toFixed(2)));
+                            } else {
+                                db.ref('users/' + parentOfA_Key + '/refWalletPending').transaction(c => parseFloat((parseFloat(c || 0) + lvl4Amt).toFixed(2)));
+                            }
                         }
                     }
                 }
-            });
-        }
+            }
+            
+            // লেভেল ৩ ট্র্যাকিং লজিক (B যখন C কে রেফার করেছে, তখন চেইনের শেষ মাথা চেক করা)
+            if (actionType === "REGISTRATION" && userA_Key) {
+                let grandpaKey = null;
+                if(uMap[userA_Key].referredBy && uMap[userA_Key].referredBy !== "none") {
+                    for(let kg in uMap) {
+                        if(uMap[kg].myOwnRefCode === uMap[userA_Key].referredBy) grandpaKey = kg;
+                    }
+                    if(grandpaKey) {
+                        // Level 3 বোনাস বরাদ্দকরণ
+                        if(uMap[grandpaKey].hasBoughtBot === true) {
+                            db.ref('users/' + grandpaKey + '/balance').transaction(c => parseFloat((parseFloat(c || 0) + lvl3Amt).toFixed(2)));
+                            db.ref('users/' + grandpaKey + '/refWalletSuccess').transaction(c => parseFloat((parseFloat(c || 0) + lvl3Amt).toFixed(2)));
+                        } else {
+                            db.ref('users/' + grandpaKey + '/refWalletPending').transaction(c => parseFloat((parseFloat(c || 0) + lvl3Amt).toFixed(2)));
+                        }
+                    }
+                }
+            }
+
+        });
     });
 }
 
@@ -412,10 +489,12 @@ function distributeBotPurchaseCommissions(botPrice) {
 // ৭. USER TRANSACTION SYSTEM (DEPOSIT/WITHDRAW)
 // ==========================================
 function depositRequest() {
+    let depBtn = document.getElementById('btn-submit-deposit');
     let amt = parseFloat(document.getElementById('deposit-amount').value);
     let trx = document.getElementById('deposit-txid').value.trim();
 
     if(!amt || !trx || amt < 100) return alert("Minimum deposit is 100 TK. Please fill data accurately.");
+    if(depBtn) depBtn.disabled = true;
 
     let depositNode = {
         username: currentUser.username,
@@ -430,17 +509,20 @@ function depositRequest() {
         alert("Deposit submitted successfully! Waiting for admin review.");
         document.getElementById('deposit-amount').value = '';
         document.getElementById('deposit-txid').value = '';
-    });
+        if(depBtn) depBtn.disabled = false;
+    }).catch(() => { if(depBtn) depBtn.disabled = false; });
 }
 
 function withdrawRequest() {
+    let witBtn = document.getElementById('btn-submit-withdraw');
     let amt = parseFloat(document.getElementById('withdraw-amount').value);
     let phone = document.getElementById('withdraw-phone').value.trim();
 
     if(!amt || !phone || amt < 500) return alert("Minimum withdraw is 500 TK.");
     if((parseFloat(currentUser.balance) - amt) < 50) return alert("You must leave at least 50 TK in your balance!");
+    if(witBtn) witBtn.disabled = true;
 
-    let netPay = parseFloat((amt * 0.98).toFixed(2)); // ২% চার্জ কর্তন
+    let netPay = parseFloat((amt * 0.98).toFixed(2)); 
 
     let withdrawNode = {
         username: currentUser.username,
@@ -452,19 +534,21 @@ function withdrawRequest() {
     };
 
     let finalBal = parseFloat((currentUser.balance - amt).toFixed(2));
-    db.ref('users/' + userId + '/balance').set(finalBal);
-
-    db.ref('withdraws').push(withdrawNode).then(() => {
-        db.ref('users/' + userId + '/withdrawHistory').push({ amount: amt, netPay: netPay, status: "PENDING" });
-        alert("Withdraw request sent successfully!");
-        document.getElementById('withdraw-amount').value = '';
-        document.getElementById('withdraw-phone').value = '';
-    });
+    db.ref('users/' + userId + '/balance').set(finalBal).then(() => {
+        db.ref('withdraws').push(withdrawNode).then(() => {
+            db.ref('users/' + userId + '/withdrawHistory').push({ amount: amt, netPay: netPay, status: "PENDING" });
+            alert("Withdraw request sent successfully!");
+            document.getElementById('withdraw-amount').value = '';
+            document.getElementById('withdraw-phone').value = '';
+            if(witBtn) witBtn.disabled = false;
+        });
+    }).catch(() => { if(witBtn) witBtn.disabled = false; });
 }
 
 function loadUserHistory() {
     db.ref('users/' + userId + '/depositHistory').on('value', snap => {
         let body = document.getElementById('user-deposit-history');
+        if(!body) return;
         body.innerHTML = '';
         snap.forEach(c => {
             let d = c.val();
@@ -475,6 +559,7 @@ function loadUserHistory() {
 
     db.ref('users/' + userId + '/withdrawHistory').on('value', snap => {
         let body = document.getElementById('user-withdraw-history');
+        if(!body) return;
         body.innerHTML = '';
         snap.forEach(c => {
             let w = c.val();
@@ -485,33 +570,39 @@ function loadUserHistory() {
 }
 
 // ==========================================
-// ৮. LEADERBOARD & LIVE POPUPS ENGINE
+// ৮. LEADERBOARD & LIVE POPUPS ENGINE (ডাইনামিক ফেক টপ ১০ মেম্বার রেন্ডারার)
 // ==========================================
 function loadLeaderboard() {
-    db.ref('users').once('value', snapshot => {
-        let list = [];
-        snapshot.forEach(child => {
-            let u = child.val();
-            if(u.username !== 'Admin') {
-                list.push({ name: u.username, bal: parseFloat(u.balance) || 0 });
-            }
-        });
+    let board = document.getElementById('leaderboardList');
+    if (!board) return;
 
-        list.sort((a, b) => b.bal - a.bal);
-        let board = document.getElementById('leaderboardList');
-        board.innerHTML = '';
+    // ২৫ জনের পুলে প্রতিবার ডাটা মিক্সিং-এর জন্য র্যান্ডম বোনাস যোগ করা
+    fakeLeaderboardData.forEach(user => {
+        let randomBonus = Math.floor(Math.random() * 50) + 5; 
+        user.balance += randomBonus;
+    });
 
-        list.slice(0, 10).forEach((user, idx) => {
-            let medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
-            board.innerHTML += `
-                <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.03); padding:12px; margin-bottom:6px; border-radius:8px;">
-                    <span><b>${medal}</b> ${user.name}</span>
-                    <span style="color:#2dd4bf; font-weight:bold;">${user.bal.toFixed(2)} TK</span>
-                </div>
-            `;
-        });
+    // বেশি ব্যালেন্স অনুযায়ী সাজানো
+    fakeLeaderboardData.sort((a, b) => b.balance - a.balance);
+    
+    // সেরা টপ ১০ জন ফিল্টার করে আলাদা করা
+    let topTen = fakeLeaderboardData.slice(0, 10);
+    board.innerHTML = '';
+
+    topTen.forEach((user, idx) => {
+        let medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
+        board.innerHTML += `
+            <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.03); padding:12px; margin-bottom:6px; border-radius:8px; align-items:center;">
+                <span><b>${medal}</b> ${user.name} <small style="color:#64748b; font-size:10px;">(${user.tag || "মেম্বার"})</small></span>
+                <span style="color:#2dd4bf; font-weight:bold;">${parseFloat(user.balance).toFixed(2)} TK</span>
+            </div>
+        `;
     });
 }
+
+// প্রতি ৬০ সেকেন্ডে লিডারবোর্ড ব্যাকগ্রাউন্ডে ডাটা হালকা চেঞ্জ করবে (কোনো অতিরিক্ত ভারী লুপ নেই)
+if(leaderboardInterval) clearInterval(leaderboardInterval);
+leaderboardInterval = setInterval(loadLeaderboard, 60000);
 
 function startFakeTransactions() {
     const names = ["Abir", "Sabbir", "Mizan", "Rahat", "Tariq", "Sumon", "Arif", "Nayan", "Imran", "Sujon"];
@@ -531,8 +622,8 @@ function startFakeTransactions() {
         div.innerHTML = `🎉 <b>${rName}***</b> successfully withdrew <b>${rAmt} TK</b> via bKash!`;
         
         list.prepend(div);
-        if(list.children.length > 15) list.removeChild(list.lastChild);
-    }, 12000); 
+        if(list.children.length > 5) list.removeChild(list.lastChild); // ৭ থেকে কমিয়ে ৫টি করা হলো পেজ হালকা রাখার জন্য
+    }, 15000); 
 }
 
 // ==========================================
@@ -541,7 +632,7 @@ function startFakeTransactions() {
 function startLiveTimerLoop() {
     if(liveInterval) clearInterval(liveInterval);
     liveInterval = setInterval(() => {
-        // ব্যাকগ্রাউন্ড ঘড়ির টাইমার লুপ
+        // লাইভ ঘড়ির কোড লাগলে দিতে পারেন, ডাটাবেজ প্রটেকশন করা হয়েছে
     }, 60000);
 }
 
@@ -575,6 +666,7 @@ function loadAdminData() {
     db.ref('users').on('value', snapshot => {
         let totalVol = 0;
         let uBody = document.getElementById('user-list-admin');
+        if(!uBody) return;
         uBody.innerHTML = '';
 
         snapshot.forEach(child => {
@@ -598,9 +690,9 @@ function loadAdminData() {
         calculateNetCash();
     });
 
-    // পেন্ডিং ডিপোজিট লিস্ট লোড
     db.ref('deposits').on('value', snap => {
         let body = document.getElementById('admin-deposit-list');
+        if(!body) return;
         body.innerHTML = '';
         snap.forEach(c => {
             let d = c.val();
@@ -620,9 +712,9 @@ function loadAdminData() {
         });
     });
 
-    // পেন্ডিং উইথড্র লিস্ট লোড
     db.ref('withdraws').on('value', snap => {
         let body = document.getElementById('admin-withdraw-list');
+        if(!body) return;
         body.innerHTML = '';
         snap.forEach(c => {
             let w = c.val();
@@ -676,7 +768,6 @@ function actionDeposit(key, type) {
 
         if(type === 'APPROVE') {
             db.ref('deposits/' + key + '/status').set("APPROVED");
-            
             db.ref('users').once('value', uSnap => {
                 uSnap.forEach(uChild => {
                     if(uChild.val().username === dep.username) {
@@ -691,7 +782,6 @@ function actionDeposit(key, type) {
                     }
                 });
             });
-
             db.ref('sysStats/totalDeposited').transaction(c => (parseFloat(c) || 0) + dep.amount);
         } else {
             db.ref('deposits/' + key + '/status').set("REJECTED");
@@ -788,76 +878,4 @@ function createBot() {
     db.ref('bots').push(newBot).then(() => {
         alert("New artificial matrix intelligence bot listed inside marketplace!");
         document.getElementById('bot-name').value = '';
-        document.getElementById('bot-price').value = '';
-        document.getElementById('bot-profit').value = '';
-        document.getElementById('bot-days').value = '';
-    });
-}
-
-function loadAdminBotsList() {
-    db.ref('bots').on('value', snap => {
-        let body = document.getElementById('admin-bots-list');
-        body.innerHTML = '';
-        snap.forEach(c => {
-            let b = c.val();
-            body.innerHTML += `<tr><td>${b.name}</td><td>${b.price}</td><td>${b.profit}</td><td>${b.days} Days</td></tr>`;
-        });
-    });
-}
-
-function toggleUserBan(targetUserId, currentStatus) {
-    db.ref('users/' + targetUserId + '/isBlocked').set(!currentStatus).then(() => {
-        alert(`User target status modification updated successfully.`);
-    });
-}
-
-function inspectUser(targetUid) {
-    document.getElementById('admin-user-search-input').value = targetUid;
-    searchUserTransactionsAndStatus();
-}
-
-function searchUserTransactionsAndStatus() {
-    let sUid = document.getElementById('admin-user-search-input').value.trim();
-    let box = document.getElementById('admin-user-trx-box');
-    let body = document.getElementById('admin-user-trx-history-body');
-
-    if(!sUid) { box.classList.add('hidden'); return; }
-
-    db.ref('users/' + sUid).once('value', snap => {
-        if(!snap.exists()) { body.innerHTML = '<tr><td colspan="4">No matrix profile logs found</td></tr>'; box.classList.remove('hidden'); return; }
-        
-        body.innerHTML = '';
-        let uData = snap.val();
-        document.getElementById('search-trx-title').innerText = `Logs for: ${uData.username}`;
-
-        if(uData.depositHistory) {
-            for(let k in uData.depositHistory) {
-                let d = uData.depositHistory[k];
-                body.innerHTML += `<tr><td>Deposit</td><td>${d.amount}</td><td>${d.trxId}</td><td>${d.status}</td></tr>`;
-            }
-        }
-        if(uData.withdrawHistory) {
-            for(let k in uData.withdrawHistory) {
-                let w = uData.withdrawHistory[k];
-                body.innerHTML += `<tr><td>Withdraw</td><td>${w.amount}</td><td>${w.phone}</td><td>${w.status}</td></tr>`;
-            }
-        }
-        box.classList.remove('hidden');
-    });
-}
-
-// ==========================================
-// ১২. LOGOUT & SHUTDOWN CONFIGURATION
-// ==========================================
-function logout() {
-    if(currentUser && currentUser.username !== 'Admin') {
-        db.ref('users/' + userId).off();
-    }
-    db.ref('sysNotice').off(); 
-    if(liveInterval) clearInterval(liveInterval);
-    if(fakeTxInterval) clearInterval(fakeTxInterval);
-    if(leaderboardInterval) clearInterval(leaderboardInterval);
-    
-    currentUser = null;
-    tg.close(); 
-}
+        document.getElementById('bot-price').value
