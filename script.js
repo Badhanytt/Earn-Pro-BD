@@ -225,22 +225,17 @@ function loadBotMarket() {
     });
 }
 
+// ১. বট কেনা - নতুন বট কিনলে ব্যালেন্স কাটবে এবং সিস্টেম চেক করবে আগের কোনো বট হোল্ডে আছে কি না
 function buyBot(botId, price) {
-    if(parseFloat(currentUser.balance) < price) {
-        return alert("Error: Insufficient balance to rent this bot!");
-    }
+    if(parseFloat(currentUser.balance) < price) return alert("Insufficient balance!");
 
     db.ref('bots/' + botId).once('value', snap => {
         let bData = snap.val();
-        if(!bData) return;
-
-        let newBalance = parseFloat((currentUser.balance - price).toFixed(2));
         let pId = Date.now();
         let endTime = pId + (bData.days * 24 * 60 * 60 * 1000);
-        
-        let globalPurchaseNode = {
+
+        let newPurchase = {
             id: pId,
-            username: currentUser.username,
             userId: userId,
             botName: bData.name,
             price: bData.price,
@@ -249,84 +244,68 @@ function buyBot(botId, price) {
             status: "running"
         };
 
-        db.ref('users/' + userId + '/balance').set(newBalance);
-        db.ref('users/' + userId + '/hasBoughtBot').set(true);
-
-        db.ref('globalPurchases/' + pId).set(globalPurchaseNode).then(() => {
-            // সেম প্রাইসের পূর্বের বটের হোল্ড ভেঙে Claimable করা
-            releaseOlderBotsOfSameLevel(bData.price, pId);
-            
-            // রেফারেল কমিশন লেভেল ২ ট্রিগার
-            if(currentUser.referredBy && currentUser.referredBy !== "none") {
-                processReferralActionChain(currentUser.referredBy, "BOT_PURCHASE", userId);
-            }
-            alert(`Successfully activated ${bData.name}!`);
+        db.ref('users/' + userId + '/balance').set(parseFloat((currentUser.balance - price).toFixed(2)));
+        db.ref('globalPurchases/' + pId).set(newPurchase).then(() => {
+            // এই ফাংশনটি এখন চেক করবে এই প্রাইসের কেউ হোল্ডে আছে কি না
+            releaseOlderBotsOfSameLevel(bData.price);
+            alert("Bot purchased!");
         });
     });
 }
 
-function releaseOlderBotsOfSameLevel(botPrice, currentPurchaseId) {
+// ২. শর্ত: শুধুমাত্র সেম প্রাইসের বট পেলেই হোল্ড রিলিজ হবে
+function releaseOlderBotsOfSameLevel(botPrice) {
     db.ref('globalPurchases').once('value', snapshot => {
         snapshot.forEach(child => {
             let p = child.val();
-            if (p.id !== currentPurchaseId && p.price === botPrice && p.status === 'waiting') {
+            // যদি একই প্রাইসের এবং 'waiting' মোডে থাকে, তবেই সে টাকা ক্লেম করতে পারবে
+            if (p.price === botPrice && p.status === 'waiting') {
                 db.ref('globalPurchases/' + child.key + '/status').set('claimable');
             }
         });
     });
 }
 
+// ৩. মনিটরিং - মেয়াদ শেষ হলে ২ দিন করে বাড়ানো এবং হোল্ডে রাখা
 function triggerCloudBotsEvaluation() {
-    db.ref('globalPurchases').once('value', snapshot => {
+    db.ref('globalPurchases').on('value', snapshot => {
         let container = document.getElementById('my-bots');
         if(!container) return;
         container.innerHTML = '';
-        let hasActive = false;
 
         snapshot.forEach(child => {
             let p = child.val();
             if(p.userId !== userId) return;
-            hasActive = true;
 
             let now = Date.now();
-            let timeLeft = p.endTime - now;
+            let status = p.status;
 
-            if (p.status === "running" && timeLeft <= 0) {
-                let extendedTime = now + (2 * 24 * 60 * 60 * 1000); 
-                db.ref('globalPurchases/' + child.key).update({ status: "waiting", endTime: extendedTime });
-                p.status = "waiting";
-            }
-            if (p.status === "waiting" && timeLeft <= 0) {
+            // মেয়াদের লজিক: সময় শেষ হলে ২ দিন করে বাড়বে
+            if (now >= p.endTime) {
                 let extendedTime = now + (2 * 24 * 60 * 60 * 1000);
-                db.ref('globalPurchases/' + child.key + '/endTime').set(extendedTime);
-                p.status = "waiting";
+                db.ref('globalPurchases/' + child.key).update({ 
+                    status: "waiting", 
+                    endTime: extendedTime 
+                });
+                status = "waiting";
             }
 
-            let badgeColor = p.status === "running" ? "#10b981" : (p.status === "waiting" ? "#f59e0b" : "#38bdf8");
-            let actionBtn = p.status === "claimable" ? `<button class="btn-glow" style="padding:2px 10px; font-size:11px; margin-top:5px;" onclick="claimBotProfit('${child.key}', ${p.profitAmount})">Claim Profit</button>` : '';
-
-            container.innerHTML += `
-                <div class="card-3d" style="padding:10px; margin-bottom:8px; background:rgba(255,255,255,0.02); display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h5 style="margin:0; color:#fff;">${p.botName}</h5>
-                        <small style="color:#94a3b8;">Status: <span style="color:${badgeColor}; font-weight:bold;">${p.status.toUpperCase()}</span></small>
-                        ${actionBtn}
-                    </div>
-                    <span style="font-weight:bold; color:#2dd4bf;">+${p.profitAmount} TK</span>
-                </div>
-            `;
+            // UI আপডেট
+            let displayStatus = status === "running" ? "Running" : (status === "waiting" ? "Waiting (Hold)" : "Claimable");
+            let btn = status === "claimable" ? `<button onclick="claimBotProfit('${child.key}', ${p.profitAmount})">Claim Profit</button>` : "";
+            
+            container.innerHTML += `<div><h5>${p.botName}</h5><p>Status: ${displayStatus}</p>${btn}</div>`;
         });
-        if(!hasActive) container.innerHTML = '<p style="color:#94a3b8; font-size:12px;">You do not have any purchased bots yet.</p>';
     });
 }
 
+// ৪. প্রফিট ক্লেম
 function claimBotProfit(nodeKey, profit) {
-    let newBal = parseFloat((currentUser.balance + profit).toFixed(2));
-    db.ref('users/' + userId + '/balance').set(newBal);
-    db.ref('globalPurchases/' + nodeKey).remove().then(() => {
-        alert(`🎉 Profit of ${profit} TK claimed successfully!`);
-    });
+    db.ref('users/' + userId + '/balance').transaction(c => (c || 0) + profit);
+    db.ref('globalPurchases/' + nodeKey).remove();
+    alert("Profit Claimed!");
 }
+
 
 // ==========================================
 // 🎯 ৭. REFERRAL MLM ENGINE (PENDING VS SUCCESS MATRIX)
